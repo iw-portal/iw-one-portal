@@ -1,0 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Catamaran:wght@100..900&family=Domine:wght@400..700&display=swap");
+@import "tailwindcss";
+
+:root {
+  font-family: "Inter", sans-serif;
+  height: 100%;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+@keyframes infinite-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-infinite-scroll {
+  animation: infinite-scroll 35s linear infinite;
+}

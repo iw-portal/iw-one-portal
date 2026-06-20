@@ -1,0 +1,230 @@
+        =====================================================
+        {/* PROGRAMS */}
+        {/* ===================================================== */}
+        <CardSection title="Programs Interested In">
+          <div className="space-y-4">
+            {PROGRAM_OPTIONS.map((program) => {
+              const selected = selectedPrograms.includes(program);
+
+              return (
+                <div
+                  key={program}
+                  className={`
+            border
+            rounded-2xl
+            p-5
+            transition
+            ${
+              selected
+                ? "bg-[#eef8f7] border-[#0f5b54]"
+                : "bg-gray-50 border-gray-200"
+            }
+          `}
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    {/* LEFT */}
+
+                    <label className="flex items-start gap-4 cursor-pointer flex-1">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleProgram(program)}
+                        className="mt-1 w-5 h-5"
+                      />
+
+                      <span className="text-gray-700 leading-relaxed">
+                        {program}
+                      </span>
+                    </label>
+
+                    {/* RIGHT */}
+
+                    {selected && (
+                      <div className="min-w-[180px]">
+                        <label className="block text-xs font-medium text-gray-500 mb-2">
+                          Preference Rank
+                        </label>
+
+                        <select
+                          value={programRanks[program] || ""}
+                          onChange={(e) =>
+                            updateProgramRank(program, e.target.value)
+                          }
+                          className="
+                    w-full
+                    border
+                    rounded-xl
+                    px-4
+                    py-3
+                    bg-white
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-[#0f5b54]
+                  "
+                        >
+                          <option value="">Select Rank</option>
+
+                          {Array.from({
+                            length: selectedPrograms.length,
+                          }).map((_, index) => (
+                            <option key={index + 1} value={index + 1}>
+                              #{index + 1}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* SUMMARY */}
+
+          {selectedPrograms.length > 0 && (
+            <div className="bg-gray-50 rounded-2xl p-5 border mt-8">
+              <h3 className="font-semibold text-gray-800 mb-4">
+                Selected Program Preferences
+              </h3>
+
+              <div className="space-y-2">
+                {Object.entries(programRanks)
+                  .sort((a, b) => a[1] - b[1])
+                  .map(([program, rank]) => (
+                    <div
+                      key={program}
+                      className="
+                flex
+                items-center
+                justify-between
+                bg-white
+                border
+                rounded-xl
+                px-4
+                py-3
+              "
+                    >
+                      <span className="text-gray-700">{program}</span>
+
+                      <span
+                        className="
+                bg-[#0f5b54]
+                text-white
+                text-sm
+                px-3
+                py-1
+                rounded-full
+              "
+                      >
+                        Rank #{rank}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </CardSection>
+        {/* ===================================================== */}
+        {/* QUESTIONS */}
+        {/* ===================================================== */}
+        <CardSection title="Questions">
+          <Textarea
+            label="Weekend commitments"
+            value={form.weekend_commitments}
+            onChange={(v) => update("weekend_commitments", v)}
+          />
+
+          <Textarea
+            label="Why are you interested in this program?"
+            value={form.why_interested}
+            onChange={(v) => update("why_interested", v)}
+          />
+
+          <Textarea
+            label="Expectations and goals"
+            value={form.expectations_goals}
+            onChange={(v) => update("expectations_goals", v)}
+          />
+        </CardSection>
+        {/* ===================================================== */}
+        {/* ABOUT */}
+        {/* ===================================================== */}
+        <CardSection title="Tell Us About Yourself">
+          <Textarea
+            label="Tell us something about yourself"
+            value={form.about_yourself}
+            onChange={(v) => update("about_yourself", v)}
+          />
+
+          <Textarea
+            label="Things you like to do"
+            value={form.fun_activities}
+            onChange={(v) => update("fun_activities", v)}
+          />
+
+          <Textarea
+            label="Things you want to learn"
+            value={form.new_things_to_learn}
+            onChange={(v) => update("new_things_to_learn", v)}
+          />
+
+          <Textarea
+            label="What makes you happy?"
+            value={form.happiness}
+            onChange={(v) => update("happiness", v)}
+          />
+
+          <Textarea
+            label="What makes you sad?"
+            value={form.sadness}
+            onChange={(v) => update("sadness", v)}
+          />
+        </CardSection>
+        {/* ===================================================== */}
+        {/* LEARNING */}
+        {/* ===================================================== */}
+        <CardSection title="Learning Style">
+          <div className="grid md:grid-cols-2 gap-4">
+            {LEARNING_OPTIONS.map((style) => (
+              <label
+                key={style}
+                className="
+                  flex
+                  items-center
+                  gap-3
+                  border
+                  rounded-2xl
+                  p-4
+                  bg-gray-50
+                  hover:bg-gray-100
+                  cursor-pointer
+                "
+              >
+                <input
+                  type="checkbox"
+                  checked={learningStyles.includes(style)}
+                  onChange={() => toggleLearning(style)}
+                />
+
+                <span>{style}</span>
+              </label>
+            ))}
+          </div>
+        </CardSection>
+        {/* ===================================================== */}
+        {/* FINAL */}
+        {/* ===================================================== */}
+        <CardSection title="Final Details">
+          <Textarea
+            label="Volunteer Experience"
+            value={form.volunteer_experience}
+            onChange={(v) => update("volunteer_experience", v)}
+          />
+
+          <Textarea
+            label="Accommodations"
+            value={form.accommodations}
+            onChange={(v) => update("accommodations", v)}
+          />
+        </CardSection>
