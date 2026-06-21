@@ -10,14 +10,15 @@ import carousel5 from "../../iw-brand-kit/home/Greeter5.png";
 const slides = [
   {
     image:
-      "https://inclusiveworld.org/wp-content/uploads/2020/11/newslide1.jpg",
+      "https://res.cloudinary.com/ddcxejrmd/image/upload/v1782009694/newslide1_lveu7l.jpg",
     text: "At Inclusive World, we nurture desires, interests & dreams",
     align: "left",
     color: "text-white",
     size: "text-4xl",
   },
   {
-    image: "https://inclusiveworld.org/wp-content/uploads/2020/11/triumph.jpg",
+    image:
+      "https://res.cloudinary.com/ddcxejrmd/image/upload/v1782009709/triumph_hucdx0.jpg",
     text: "We Celebrate Triumphs",
     align: "left",
     color: "text-[#ad3500]",
@@ -25,24 +26,15 @@ const slides = [
   },
   {
     image:
-      "https://inclusiveworld.org/wp-content/uploads/2020/11/newsslide4_1-1.jpg",
+      "https://res.cloudinary.com/ddcxejrmd/image/upload/v1782009727/newsslide4_1-1_tto9on.jpg",
     text: "We uphold the dignity of individuals",
     align: "right",
     color: "text-black",
     size: "text-4xl",
   },
-  // {
-  //   image:
-  //     "https://inclusiveworld.org/wp-content/uploads/2020/11/personcenteredslide.jpg",
-  //   text: "We practice person centered culture",
-  //   align: "right",
-  //   color: "text-white",
-  //   size: "text-3xl",
-  //   offset: "right-40 sm:right-20 md:right-18 lg:right-22 xl:right-50",
-  // },
   {
     image:
-      "https://inclusiveworld.org/wp-content/uploads/2020/11/personcenteredslide.jpg",
+      "https://res.cloudinary.com/ddcxejrmd/image/upload/v1782009670/personcenteredslide_utmpqs.jpg",
     text: "We practice person centered culture",
     align: "right",
     color: "text-white",
@@ -51,7 +43,7 @@ const slides = [
   },
   {
     image:
-      "https://inclusiveworld.org/wp-content/uploads/2020/11/newsslide5-1.jpg",
+      "https://res.cloudinary.com/ddcxejrmd/image/upload/v1782009755/newsslide5-1_ffe7pp.jpg",
     text: "We focus on holistic development",
     align: "right",
     color: "text-black",
@@ -109,8 +101,8 @@ const HeroCarousel = () => {
     //   </div>
     // </div>
     // <div className="relative w-full overflow-hidden">
-    <div className="relative w-full mt-6 max-w-7xl mx-auto overflow-hidden rounded-3xl">
-      <div className="relative w-full h-[300px] sm:h-[420px] md:h-[520px] lg:h-[600px]">
+    <div className="relative w-full mt-4 max-w-7xl mx-auto overflow-hidden rounded-3xl">
+      <div className="relative w-full h-[220px] sm:h-[300px] md:h-[380px] lg:h-[460px]">
         {/* Images */}
         {slides.map((slide, index) => (
           <div

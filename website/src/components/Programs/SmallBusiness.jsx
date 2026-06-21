@@ -185,7 +185,7 @@ export default function SmallBusiness() {
         </div>
 
         <img
-          src="https://inclusiveworld.org/wp-content/uploads/2022/07/AdobeStock_84487824-768x560.jpeg"
+          src="https://res.cloudinary.com/ddcxejrmd/image/upload/v1782006801/Screenshot_2026-06-20_at_6.53.18_PM_oxteso.png"
           alt="Products"
           className="rounded shadow"
         />
@@ -231,7 +231,7 @@ export default function SmallBusiness() {
         </div>
 
         <img
-          src="https://inclusiveworld.org/wp-content/uploads/2022/07/AdobeStock_139382723-600x400.jpeg"
+          src="https://res.cloudinary.com/ddcxejrmd/image/upload/v1782006733/Screenshot_2026-06-20_at_6.52.09_PM_tsjtwa.png"
           alt="Services"
           className="rounded shadow"
         />

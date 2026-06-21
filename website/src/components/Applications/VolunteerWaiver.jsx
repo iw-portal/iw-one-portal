@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { FaCheck } from "react-icons/fa";
 import { PiMailboxFill } from "react-icons/pi";
+import { HiCheckCircle } from "react-icons/hi2";
 
 const VolunteerWaiver = ({ onAccept }) => {
   const [checked, setChecked] = useState(false);
@@ -126,43 +127,58 @@ const VolunteerWaiver = ({ onAccept }) => {
 
   if (cycles.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f6f7] px-4">
-        <div className="max-w-xl w-full bg-white rounded-3xl shadow-sm border p-10 text-center">
-          <div className="w-24 h-24 rounded-full bg-[#eef8f7] flex items-center justify-center mx-auto mb-6">
-            <span className="text-4xl">
-              <PiMailboxFill className="text-[#03571d] text-5xl" />
-            </span>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-slate-50 to-teal-50 px-4">
+        <div className="max-w-2xl w-full bg-white rounded-[2rem] shadow-xl border border-teal-100 overflow-hidden">
+          <div className="px-8 pt-10 text-center">
+            <img
+              src="https://res.cloudinary.com/ddcxejrmd/image/upload/v1782008560/iw-logo-final_urkutm.png"
+              alt="Inclusive World"
+              className="h-24 w-auto mx-auto mb-6"
+            />
+
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-teal-50 border border-teal-100 mb-6">
+              <HiCheckCircle className="text-4xl text-teal-700" />
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Academic Year 2026–2027
+              <br /> Coming Soon
+            </h1>
+
+            <div className="mx-auto h-1 w-12 rounded-full bg-teal-700 mb-6" />
+
+            <p className="text-gray-600 text-lg leading-relaxed max-w-xl mx-auto">
+              Registration for the upcoming academic year is not yet available.
+              Program offerings, schedules, and enrollment information will be
+              announced soon.
+            </p>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">
-            Volunteer Applications Closed
-          </h1>
+          <div className="mt-8 bg-teal-50 border-t border-teal-100 px-8 py-6 text-center">
+            <p className="text-sm text-teal-800 mb-4">
+              Please check back soon for updates regarding Academic Year
+              2026–2027 registration.
+            </p>
 
-          <p className="text-gray-500 leading-relaxed">
-            Thank you for your interest in volunteering with Inclusive World.
-            Volunteer applications are currently closed at this time.
-          </p>
-
-          <p className="text-sm text-gray-400 mt-4">
-            Please check back later for future application cycles.
-          </p>
-
-          <a
-            href="/"
-            className="
-              inline-block
-              mt-8
+            <a
+              href="/"
+              className="
+              inline-flex
+              items-center
+              justify-center
               bg-[#0f5b54]
               hover:bg-[#0c4a45]
               text-white
               px-8
               py-3
               rounded-2xl
+              font-medium
               transition
             "
-          >
-            Back to Home
-          </a>
+            >
+              Back to Home
+            </a>
+          </div>
         </div>
       </div>
     );

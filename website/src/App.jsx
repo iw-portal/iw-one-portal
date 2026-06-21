@@ -1,4 +1,10 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import {
+  FaLaptopCode,
+  FaDesktop,
+  FaTabletAlt,
+  FaShieldAlt,
+} from "react-icons/fa";
 import { useEffect, useState } from "react";
 import ScrollToTop from "./components/Common/ScrollToTop";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -101,11 +107,178 @@ function readStoredUser() {
   }
 }
 
+// function DeviceBlocker() {
+//   return (
+//     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-white via-teal-50/40 to-cyan-50 flex items-center justify-center px-6 py-10">
+//       <div className="absolute inset-0 opacity-70">
+//         <div className="absolute -left-32 top-1/2 h-80 w-[120%] -rotate-12 bg-teal-100/40 blur-3xl" />
+//         <div className="absolute right-[-120px] top-24 h-72 w-72 rounded-full bg-teal-200/30 blur-3xl" />
+//         <div className="absolute left-[-120px] bottom-16 h-72 w-72 rounded-full bg-cyan-100/60 blur-3xl" />
+//       </div>
+
+//       <div className="relative max-w-xl w-full rounded-[2rem] bg-white/90 backdrop-blur-xl shadow-2xl border border-teal-100 overflow-hidden text-center">
+//         <div className="px-8 pt-10 pb-6 border-b border-slate-100">
+//           <img
+//             src="https://res.cloudinary.com/ddcxejrmd/image/upload/v1782008560/iw-logo-final_urkutm.png"
+//             alt="Inclusive World"
+//             className="mx-auto h-24 w-auto object-contain mb-4"
+//           />
+
+//           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-teal-50 border border-teal-100 shadow-sm">
+//             <FaLaptopCode className="text-4xl text-teal-700" />
+//           </div>
+//         </div>
+
+//         <div className="px-8 py-8">
+//           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-950 leading-tight mb-4">
+//             Laptop or Desktop Required
+//           </h1>
+
+//           <div className="mx-auto mb-6 h-1 w-10 rounded-full bg-teal-700" />
+
+//           <p className="text-slate-600 text-lg leading-relaxed max-w-md mx-auto mb-8">
+//             The Inclusive World Portal is optimized for larger screens. Please
+//             access the portal from a laptop or desktop computer for the best
+//             experience.
+//           </p>
+
+//           <div className="grid grid-cols-3 gap-0 border-y border-slate-100 py-6 mb-6">
+//             <div className="flex flex-col items-center gap-2">
+//               <FaLaptopCode className="text-4xl text-teal-700" />
+//               <span className="text-sm font-semibold text-slate-800">
+//                 Laptop
+//               </span>
+//             </div>
+
+//             <div className="flex flex-col items-center gap-2 border-x border-slate-100">
+//               <FaDesktop className="text-4xl text-teal-700" />
+//               <span className="text-sm font-semibold text-slate-800">
+//                 Desktop
+//               </span>
+//             </div>
+
+//             <div className="flex flex-col items-center gap-2 opacity-45">
+//               <FaTabletAlt className="text-4xl text-slate-500" />
+//               <span className="text-sm font-semibold text-slate-500">
+//                 Tablet
+//               </span>
+//             </div>
+//           </div>
+
+//           <div className="rounded-2xl bg-teal-50 border border-teal-100 px-5 py-4 flex items-center gap-4 text-left">
+//             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm">
+//               <FaShieldAlt className="text-xl" />
+//             </div>
+
+//             <div>
+//               <p className="text-sm font-bold text-teal-800">
+//                 Your experience. Our priority.
+//               </p>
+//               <p className="text-sm text-slate-600">
+//                 Thank you for helping us create the best experience for
+//                 everyone.
+//               </p>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+function DeviceBlocker() {
+  return (
+    <div className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-br from-white via-teal-50/40 to-cyan-50 flex items-center justify-center px-4 sm:px-6 py-6 sm:py-10">
+      <div className="absolute inset-0 opacity-70 pointer-events-none">
+        <div className="absolute -left-32 top-1/2 h-64 sm:h-80 w-[120%] -rotate-12 bg-teal-100/40 blur-3xl" />
+        <div className="absolute right-[-120px] top-20 h-56 w-56 sm:h-72 sm:w-72 rounded-full bg-teal-200/30 blur-3xl" />
+        <div className="absolute left-[-120px] bottom-12 h-56 w-56 sm:h-72 sm:w-72 rounded-full bg-cyan-100/60 blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-[92vw] sm:max-w-md md:max-w-xl rounded-2xl sm:rounded-[2rem] bg-white/90 backdrop-blur-xl shadow-xl sm:shadow-2xl border border-teal-100 overflow-hidden text-center">
+        <div className="px-5 sm:px-8 pt-6 sm:pt-10 pb-5 sm:pb-6 border-b border-slate-100">
+          <img
+            src="https://res.cloudinary.com/ddcxejrmd/image/upload/v1782008560/iw-logo-final_urkutm.png"
+            alt="Inclusive World"
+            className="mx-auto h-16 sm:h-20 md:h-24 w-auto object-contain mb-4 sm:mb-5"
+          />
+
+          <div className="mx-auto flex h-14 w-14 sm:h-18 sm:w-18 md:h-20 md:w-20 items-center justify-center rounded-full bg-teal-50 border border-teal-100 shadow-sm">
+            <FaLaptopCode className="text-3xl sm:text-4xl text-teal-700" />
+          </div>
+        </div>
+
+        <div className="px-5 sm:px-8 py-6 sm:py-8">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-slate-950 leading-tight mb-3 sm:mb-4">
+            Laptop or Desktop Required
+          </h1>
+
+          <div className="mx-auto mb-4 sm:mb-6 h-1 w-9 sm:w-10 rounded-full bg-teal-700" />
+
+          <p className="text-slate-600 text-sm sm:text-base md:text-lg leading-relaxed max-w-md mx-auto mb-6 sm:mb-8">
+            The Inclusive World Portal is optimized for larger screens. Please
+            access the portal from a laptop or desktop computer for the best
+            experience.
+          </p>
+
+          <div className="grid grid-cols-3 border-y border-slate-100 py-4 sm:py-6 mb-5 sm:mb-6">
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+              <FaLaptopCode className="text-2xl sm:text-3xl md:text-4xl text-teal-700" />
+              <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                Laptop
+              </span>
+            </div>
+
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2 border-x border-slate-100">
+              <FaDesktop className="text-2xl sm:text-3xl md:text-4xl text-teal-700" />
+              <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                Desktop
+              </span>
+            </div>
+
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2 opacity-45">
+              <FaTabletAlt className="text-2xl sm:text-3xl md:text-4xl text-slate-500" />
+              <span className="text-xs sm:text-sm font-semibold text-slate-500">
+                Tablet
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-xl sm:rounded-2xl bg-teal-50 border border-teal-100 px-4 sm:px-5 py-3 sm:py-4 flex items-center gap-3 sm:gap-4 text-left">
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm">
+              <FaShieldAlt className="text-lg sm:text-xl" />
+            </div>
+
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-teal-800">
+                Your experience. Our priority.
+              </p>
+              <p className="text-xs sm:text-sm text-slate-600 leading-snug">
+                Thank you for helping us create the best experience for
+                everyone.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const App = () => {
   const [user, setUser] = useState(readStoredUser);
+  const [isSmallDevice, setIsSmallDevice] = useState(window.innerWidth < 1024);
 
   useEffect(() => {
     window.history.scrollRestoration = "manual";
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallDevice(window.innerWidth < 1024);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -116,6 +289,16 @@ const App = () => {
       sessionStorage.removeItem(CHECKOUT_USER_STORAGE_KEY);
     }
   }, [user]);
+
+  // if (isSmallDevice) {
+  //   return <DeviceBlocker />;
+  // }
+
+  const isOnePortalRoute = window.location.pathname.startsWith("/one-portal");
+
+  if (isSmallDevice && isOnePortalRoute) {
+    return <DeviceBlocker />;
+  }
 
   return (
     <Router>

@@ -209,7 +209,7 @@ const Navbar = () => {
                     href="https://shop-inclusiveworld.netlify.app/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-[#e16a5b] text-white px-5 py-2 rounded"
+                    className="bg-[#e16a5b] text-white px-5 py-2 rounded text-center"
                   >
                     Shop
                   </a>
@@ -385,7 +385,7 @@ const Navbar = () => {
                 href="https://shop-inclusiveworld.netlify.app/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#e16a5b] text-white px-5 py-2 rounded"
+                className="bg-[#e16a5b] text-white px-5 py-2 rounded text-center"
               >
                 Shop
               </a>
