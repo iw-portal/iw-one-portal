@@ -60,6 +60,7 @@ export default function Courses() {
       .from("programs")
       .select("*")
       .order("course_title")
+      .neq("category", ["volunteer_only"])
       .eq("is_active", true)
       .eq("is_archived", false);
 
@@ -184,7 +185,7 @@ export default function Courses() {
                 <div className="flex flex-wrap gap-2 mt-5">
                   {course.category && (
                     <span className="text-xs bg-gray-200 px-2 py-1 rounded">
-                      {course.category}
+                      {formatCategory(course.category)}
                     </span>
                   )}
                 </div>
