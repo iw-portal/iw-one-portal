@@ -1,0 +1,31 @@
+name: Enforce Branch Flow
+
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+      - develop
+
+jobs:
+  enforce-flow:
+    name: Enforce branch flow
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check allowed source branch
+        run: |
+          BASE="${{ github.base_ref }}"
+          HEAD="${{ github.head_ref }}"
+
+          echo "PR from $HEAD into $BASE"
+
+          if [ "$BASE" = "main" ] && [ "$HEAD" != "staging" ]; then
+            echo "Only staging can be merged into main."
+            exit 1
+          fi
+
+          if [ "$BASE" = "staging" ] && [ "$HEAD" != "develop" ]; then
+            echo "Only develop can be merged into staging."
+            exit 1
+          fi
