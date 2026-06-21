@@ -29,6 +29,90 @@ function formatCategory(category) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function getCourseKey(course) {
+  return course.course_title
+    ?.toLowerCase()
+    .replace(/\(.*?\)/g, "")
+    .replace(/\s*-\s*(social|professional|basic|intermediate|advanced).*$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function toTitleCase(text) {
+  if (!text) return "";
+
+  return text.replace(
+    /\w\S*/g,
+    (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+  );
+}
+
+function formatCourseTitle(title) {
+  if (!title) return "";
+
+  const smallWords = [
+    "and",
+    "or",
+    "of",
+    "the",
+    "in",
+    "on",
+    "for",
+    "to",
+    "with",
+  ];
+  const upperWords = ["MS", "AI", "IT", "HTML", "CSS", "JS", "SQL", "UI", "UX"];
+
+  return title
+    .replace(/\(.*?\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .map((word, index) => {
+      const cleanWord = word.replace(/[^a-zA-Z]/g, "");
+      const lowerWord = cleanWord.toLowerCase();
+
+      if (upperWords.includes(cleanWord.toUpperCase())) {
+        return word.toUpperCase();
+      }
+
+      if (index !== 0 && smallWords.includes(lowerWord)) {
+        return lowerWord;
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
+function getDisplayTitle(title) {
+  const cleaned = title
+    ?.replace(/\(.*?\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return formatCourseTitle(cleaned);
+}
+
+function removeDuplicateCourses(data) {
+  const map = new Map();
+
+  data.forEach((course) => {
+    const key = getCourseKey(course);
+
+    if (!map.has(key)) {
+      map.set(key, {
+        ...course,
+        sectionsList: [course],
+      });
+    } else {
+      map.get(key).sectionsList.push(course);
+    }
+  });
+
+  return Array.from(map.values());
+}
+
 export default function Courses() {
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
@@ -55,12 +139,38 @@ export default function Courses() {
     setIsModalOpen(false);
   }
 
+  // async function fetchCourses() {
+  //   const { data, error } = await supabase
+  //     .from("programs")
+  //     .select("*")
+  //     .order("course_title")
+  //     .neq("category", ["volunteer_only"])
+  //     .eq("is_active", true)
+  //     .eq("is_archived", false);
+
+  //   if (error) {
+  //     console.error("Supabase error:", error);
+  //     return;
+  //   }
+
+  //   console.log("Courses from Supabase:", data);
+
+  //   setCourses(data);
+  //   setFilteredCourses(data);
+
+  //   const uniqueCategories = [
+  //     ...new Set(data.map((course) => course.category).filter(Boolean)),
+  //   ].sort();
+
+  //   setCategories(uniqueCategories);
+  // }
+
   async function fetchCourses() {
     const { data, error } = await supabase
       .from("programs")
       .select("*")
       .order("course_title")
-      .neq("category", ["volunteer_only"])
+      .neq("category", "volunteer_only")
       .eq("is_active", true)
       .eq("is_archived", false);
 
@@ -69,13 +179,15 @@ export default function Courses() {
       return;
     }
 
-    console.log("Courses from Supabase:", data);
+    const uniqueCourses = removeDuplicateCourses(data || []);
 
-    setCourses(data);
-    setFilteredCourses(data);
+    setCourses(uniqueCourses);
+    setFilteredCourses(uniqueCourses);
 
     const uniqueCategories = [
-      ...new Set(data.map((course) => course.category).filter(Boolean)),
+      ...new Set(
+        uniqueCourses.map((course) => course.category).filter(Boolean),
+      ),
     ].sort();
 
     setCategories(uniqueCategories);
@@ -165,8 +277,11 @@ export default function Courses() {
                   className="rounded-lg mb-5 w-full h-48 object-contain"
                 />
 
-                <h3 className="text-xl font-semibold text-[#e0705d] mb-3">
+                {/* <h3 className="text-xl font-semibold text-[#e0705d] mb-3">
                   {course.course_title}
+                </h3> */}
+                <h3 className="text-xl font-semibold text-[#e0705d] mb-3">
+                  {getDisplayTitle(course.course_title)}
                 </h3>
 
                 <p className="text-sm text-gray-600 mb-1">
@@ -218,7 +333,10 @@ export default function Courses() {
                 />
 
                 <h2 className="text-2xl font-semibold text-[#e0705d] mb-4">
-                  {selectedCourse.course_title}
+                  {/* {selectedCourse.course_title} */}
+                  <h2 className="text-2xl font-semibold text-[#e0705d] mb-4">
+                    {getDisplayTitle(selectedCourse.course_title)}
+                  </h2>
                 </h2>
 
                 <p className="mb-2">
