@@ -81,6 +81,7 @@ export default function InterestForm({ user }) {
 
   const [form, setForm] = useState({
     selected_programs: {},
+    additional_comments: "",
 
     weekend_commitments: "",
 
@@ -312,6 +313,7 @@ export default function InterestForm({ user }) {
         .from("volunteer_applications")
         .update({
           selected_programs: form.selected_programs,
+          additional_comments: form.additional_comments,
           weekend_commitments: form.weekend_commitments,
 
           about_me: form.about_me,
@@ -546,6 +548,26 @@ export default function InterestForm({ user }) {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-3xl border shadow-sm p-8">
+        <label className="block font-medium mb-3">
+          Additional Comments / Requests
+        </label>
+
+        <p className="text-gray-500 mb-4">
+          Share anything else we should know, such as whether you are open to
+          supporting multiple classes or have any scheduling requests.
+        </p>
+
+        <textarea
+          disabled={hasAssignments}
+          rows={4}
+          value={form.additional_comments || ""}
+          onChange={(e) => update("additional_comments", e.target.value)}
+          placeholder="Example: I am open to helping with 2 classes if needed."
+          className="w-full border rounded-xl p-4"
+        />
       </div>
 
       <QuestionCard

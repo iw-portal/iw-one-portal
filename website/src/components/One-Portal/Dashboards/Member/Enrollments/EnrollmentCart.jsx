@@ -55,6 +55,7 @@ export default function EnrollmentCart({
   const [programs, setPrograms] = useState([]);
   const [updating, setUpdating] = useState(false);
   const [selectedProgramDetails, setSelectedProgramDetails] = useState(null);
+  const [comments, setComments] = useState("");
 
   async function fetchPrograms() {
     const { data, error } = await supabase
@@ -63,6 +64,7 @@ export default function EnrollmentCart({
       .eq("academic_year", cycle.year)
       .eq("is_active", true)
       .eq("is_archived", false)
+      .neq("category", "volunteer_only")
       .order("course_title");
 
     if (error) {
@@ -124,6 +126,7 @@ export default function EnrollmentCart({
       fetchPrograms();
     }
   }, [cycle]);
+
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   function isSelected(programId) {
@@ -259,12 +262,46 @@ export default function EnrollmentCart({
     }
   }
 
+  async function handleContinue() {
+    const cleanedComments = comments.trim();
+
+    if (!cleanedComments) {
+      alert(
+        'Additional Program Requests is required. If you have no requests, enter "N/A".',
+      );
+      return;
+    }
+
+    if (!activeCartId) {
+      alert("Your cart is still loading. Please try again.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("enrollment_carts")
+      .update({
+        member_comments: cleanedComments,
+      })
+      .eq("id", activeCartId)
+      .eq("person_id", user.person_id);
+
+    if (error) {
+      console.error(error);
+      alert("Could not save comments.");
+      return;
+    }
+
+    onNext();
+  }
+
   console.log("SELECTED CYCLE", cycle);
   const subtotal = calculateSubtotal(cart, cycle);
 
   const vocationalCartCount = cart.filter(
     (item) => item.programs?.category?.toLowerCase() === "vocational",
   ).length;
+
+  const commentsValid = comments.trim().length > 0;
 
   return (
     <div className="grid lg:grid-cols-3 gap-8">
@@ -392,6 +429,33 @@ export default function EnrollmentCart({
               </div>
             ))
           )}
+          <div className="bg-white rounded-3xl border p-6 mt-6">
+            <label className="block font-medium mb-3">
+              Additional Program Requests{" "}
+              <span className="text-red-600">*</span>
+            </label>
+
+            <textarea
+              rows={7}
+              required
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
+              placeholder={`Examples:
+• I prefer Saturday classes
+• I would like morning sessions
+• Please avoid overlapping schedules
+• Interested in multiple sections if available
+
+If you have no requests, enter N/A.`}
+              className="w-full border rounded-xl p-4"
+            />
+            {!commentsValid && (
+              <p className="text-red-600 text-sm mt-2">
+                This field is required. If you have no requests, please enter
+                "N/A".
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="border-t mt-6 pt-6 space-y-3">
@@ -409,17 +473,21 @@ export default function EnrollmentCart({
         </div>
 
         <button
-          disabled={cart.length === 0 || updating}
-          onClick={onNext}
+          disabled={cart.length === 0 || updating || !commentsValid}
+          // onClick={onNext}
+          onClick={handleContinue}
           className="
-            mt-6
-            w-full
-            bg-[#0f5b54]
-            text-white
-            py-4
-            rounded-2xl
-            font-medium
-          "
+    mt-6
+    w-full
+    py-4
+    rounded-2xl
+    font-medium
+    bg-[#0f5b54]
+    text-white
+    disabled:bg-gray-400
+    disabled:text-gray-100
+    disabled:cursor-not-allowed
+  "
         >
           Continue
         </button>
