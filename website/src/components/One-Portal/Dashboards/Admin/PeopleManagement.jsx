@@ -94,10 +94,25 @@ const PeopleManagement = () => {
 
   const [roleModalPerson, setRoleModalPerson] = useState(null);
   const [newRole, setNewRole] = useState("");
+  const [enrollmentCarts, setEnrollmentCarts] = useState([]);
 
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  const fetchEnrollmentCarts = async () => {
+    const { data, error } = await supabase
+      .from("enrollment_carts")
+      .select("id, person_id, member_comments, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setEnrollmentCarts(data || []);
+  };
 
   const fetchAllData = async () => {
     await Promise.all([
@@ -107,6 +122,7 @@ const PeopleManagement = () => {
       fetchMemberApplications(),
       fetchVolunteerApplications(),
       fetchEnrollments(),
+      fetchEnrollmentCarts(),
     ]);
   };
 
@@ -297,6 +313,20 @@ const PeopleManagement = () => {
     const memberEnrollments = enrollments.filter(
       (enrollment) => enrollment.student_id === person.id,
     );
+
+    const memberCarts = enrollmentCarts.filter(
+      (cart) => cart.person_id === person.id,
+    );
+
+    const latestMemberCart = memberCarts[0] || null;
+
+    return {
+      ...person,
+      memberApplication,
+      volunteerApplication,
+      enrollments: memberEnrollments,
+      latestMemberCart,
+    };
 
     return {
       ...person,
@@ -1001,6 +1031,12 @@ const PeopleManagement = () => {
                       </p>
                     )}
                   </Section>
+                  <Section title="Member Additional Program Requests">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {selectedPerson.latestMemberCart?.member_comments ||
+                        "No comments provided."}
+                    </p>
+                  </Section>
                 </>
               )}
 
@@ -1160,6 +1196,12 @@ const PeopleManagement = () => {
                         program.
                       </p>
                     )}
+                  </Section>
+                  <Section title="Volunteer Additional Program Requests">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {selectedPerson.volunteerApplication
+                        ?.additional_comments || "No comments provided."}
+                    </p>
                   </Section>
                 </>
               )}
