@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-// import { supabase } from "../../../../lib/supabase";
+import { supabase } from "../../../../lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { Pencil } from "lucide-react";
 import Papa from "papaparse";
@@ -8,10 +8,8 @@ const BUCKET = "images";
 const FOLDER = "programs";
 
 const supabaseUrl = "https://rvcronfsjghrpskywlwh.supabase.co";
-const supabaseKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2Y3JvbmZzamdocnBza3l3bHdoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjI2OTI2OSwiZXhwIjoyMDkxODQ1MjY5fQ.THHNcnI5GfkuV0F90cxmFnnKmYf9NsMYXXj20qW3bpM";
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseKey = import.meta.env.VITE_SUPABASE_SECRET_KEY;
+const supabase2 = createClient(supabaseUrl, supabaseKey);
 
 // const CATEGORY_OPTIONS = [
 //   { value: "vocational", label: "Vocational" },
@@ -2189,7 +2187,7 @@ const Programs = () => {
   };
 
   const fetchImages = async () => {
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabase2.storage
       .from(BUCKET)
       .list(FOLDER, { limit: 100 });
 
@@ -2199,7 +2197,7 @@ const Programs = () => {
     }
 
     const urls = (data || []).map((file) => {
-      const { data: publicUrl } = supabase.storage
+      const { data: publicUrl } = supabase2.storage
         .from(BUCKET)
         .getPublicUrl(`${FOLDER}/${file.name}`);
 
@@ -2217,7 +2215,7 @@ const Programs = () => {
     const fileName = `${Date.now()}_${file.name.replace(/\s/g, "_")}`;
     const filePath = `${FOLDER}/${fileName}`;
 
-    const { error } = await supabase.storage
+    const { error } = await supabase2.storage
       .from(BUCKET)
       .upload(filePath, file);
 
@@ -2228,7 +2226,7 @@ const Programs = () => {
       return;
     }
 
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+    const { data } = supabase2.storage.from(BUCKET).getPublicUrl(filePath);
 
     setNewProgram((prev) => ({
       ...prev,
