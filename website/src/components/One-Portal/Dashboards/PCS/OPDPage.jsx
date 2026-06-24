@@ -326,6 +326,8 @@ const OPDPage = ({ user }) => {
     signedByName?.trim() &&
     Object.values(opdData).every((v) => v && String(v).trim().length > 0);
 
+  const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
+
   const saveOPD = async (status = "in_progress") => {
     // if (!opd?.id || !person?.id) return;
     if (!person?.id) return;
@@ -369,8 +371,8 @@ const OPDPage = ({ user }) => {
       });
       const reviewUrl =
         person.role === "member"
-          ? "https://iw-one-portal.vercel.app/one-portal/member/opd-review"
-          : "https://iw-one-portal.vercel.app/one-portal/volunteer/opd-review";
+          ? `${API_BASE_URL}/one-portal/member/opd-review`
+          : `${API_BASE_URL}/one-portal/volunteer/opd-review`;
 
       await fetch("/api/opd_review_email", {
         method: "POST",
