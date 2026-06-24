@@ -203,6 +203,8 @@ const AdminApplications = () => {
   //   }
   // };
 
+  const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
+
   const approve = async (app) => {
     try {
       const endpoint =
@@ -210,7 +212,7 @@ const AdminApplications = () => {
           ? "/api/volunteer_email"
           : "/api/member_email";
 
-      const url = "https://iw-one-portal.vercel.app" + endpoint;
+      const url = `${API_BASE_URL}${endpoint}`;
 
       const table =
         app.application_type === "volunteer"
@@ -281,7 +283,7 @@ const AdminApplications = () => {
           ? "/api/volunteer_email"
           : "/api/member_email";
 
-      const url = "https://iw-one-portal.vercel.app" + endpoint;
+      const url = `${API_BASE_URL}${endpoint}`;
 
       const table =
         app.application_type === "volunteer"

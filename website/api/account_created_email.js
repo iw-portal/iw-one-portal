@@ -24,6 +24,7 @@ export default async function handler(req, res) {
 
   try {
     const BREVO_API_KEY = process.env.BREVO_API_KEY;
+    const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
 
     const { email, fname, lname, username } = req.body;
 
@@ -178,7 +179,7 @@ export default async function handler(req, res) {
         <td align="center">
 
           <a
-            href="https://iw-one-portal.vercel.app/one-portal/login"
+            href="${API_BASE_URL}/one-portal/login"
             style="
               display:inline-block;
               background:#0c4f49;
