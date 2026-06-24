@@ -668,8 +668,9 @@ const Signup = () => {
       }
 
       try {
+        const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
         const response = await fetch(
-          "https://iw-one-portal.vercel.app/api/account_created_email",
+          `${API_BASE_URL}/api/account_created_email`,
           {
             method: "POST",
             headers: {

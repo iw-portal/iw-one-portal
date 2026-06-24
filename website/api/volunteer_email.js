@@ -48,6 +48,7 @@ export default async function handler(req, res) {
       // =====================================================
 
       let portalSignupLink = "";
+      const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
 
       if (approved) {
         // =========================================
@@ -97,7 +98,6 @@ export default async function handler(req, res) {
         // // Final Signup URL
         // // =========================================
 
-        // portalSignupLink = `https://iw-one-portal.vercel.app/one-portal/signup?invite=${token}`;
         // =========================================
         // Check Existing Active Invite
         // =========================================
@@ -116,7 +116,7 @@ export default async function handler(req, res) {
         // =========================================
 
         if (existingInvite) {
-          portalSignupLink = `https://iw-one-portal.vercel.app/one-portal/signup?invite=${existingInvite.token}`;
+          portalSignupLink = `${API_BASE_URL}/one-portal/signup?invite=${existingInvite.token}`;
         } else {
           // =========================================
           // Generate Secure Token
@@ -156,7 +156,7 @@ export default async function handler(req, res) {
           // Final Signup URL
           // =========================================
 
-          portalSignupLink = `https://iw-one-portal.vercel.app/one-portal/signup?invite=${token}`;
+          portalSignupLink = `${API_BASE_URL}/one-portal/signup?invite=${token}`;
         }
       }
 
