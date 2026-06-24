@@ -5,4 +5,7 @@ const supabaseUrl =
   "https://rvcronfsjghrpskywlwh.supabase.co";
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+console.log(import.meta.env);
+console.log("KEY:", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+
 export const supabase = createClient(supabaseUrl, supabaseKey);

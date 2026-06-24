@@ -152,6 +152,17 @@ const AdminRegistrations = () => {
             </label>
 
             <select
+              value={form.environment}
+              onChange={(e) =>
+                setForm({ ...form, environment: e.target.value })
+              }
+              className="border p-3 rounded w-full mb-2"
+            >
+              <option value="production">Production</option>
+              <option value="staging">Staging</option>
+            </select>
+
+            <select
               value={form.duration_type}
               onChange={(e) =>
                 setForm({ ...form, duration_type: e.target.value })
