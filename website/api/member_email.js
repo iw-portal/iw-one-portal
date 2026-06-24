@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     // =====================================================
 
     let portalSignupLink = "";
-    const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
+    const API_BASE_URL = process.env.PUBLIC_APP_URL;
 
     if (approved) {
       // =========================================
