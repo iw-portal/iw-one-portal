@@ -86,6 +86,7 @@ import OPDDashboard from "./components/One-Portal/Dashboards/PCS/OPDDashboard";
 import OPDPage from "./components/One-Portal/Dashboards/PCS/OPDPage";
 import OPDReviewPage from "./components/One-Portal/Dashboards/PCS/OPDReviewPage";
 import OPDDirectory from "./components/One-Portal/Dashboards/PCS/OPDDirectory";
+import PCSProfile from "./components/One-Portal/Dashboards/PCS/PCSProfile";
 
 const USER_STORAGE_KEY = "iw_user";
 const CHECKOUT_USER_STORAGE_KEY = "iw_checkout_user";
@@ -756,6 +757,17 @@ const App = () => {
               <ProtectedRoute user={user} allowedRoles={["pcs"]}>
                 <PCSLayout setUser={setUser}>
                   <OPDPage user={user} />
+                </PCSLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/one-portal/pcs/profile"
+            element={
+              <ProtectedRoute user={user} allowedRoles={["pcs"]}>
+                <PCSLayout setUser={setUser}>
+                  <PCSProfile user={user} />
                 </PCSLayout>
               </ProtectedRoute>
             }
