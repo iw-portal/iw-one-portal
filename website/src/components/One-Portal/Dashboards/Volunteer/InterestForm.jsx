@@ -347,7 +347,7 @@ export default function InterestForm({ user }) {
         .from("volunteer_applications")
         .update({
           selected_programs: form.selected_programs,
-
+          additional_comments: form.additional_comments,
           weekend_commitments: form.weekend_commitments,
 
           about_me: form.about_me,

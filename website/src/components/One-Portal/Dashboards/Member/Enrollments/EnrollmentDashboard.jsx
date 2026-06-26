@@ -5,6 +5,7 @@ import EnrollmentProfile from "./EnrollmentProfile";
 import EnrollmentCheckout from "./EnrollmentCheckout";
 
 const STEPS = ["programs", "profile", "payment", "complete"];
+const STEP_ORDER = ["programs", "profile", "payment", "complete"];
 const USER_STORAGE_KEY = "iw_user";
 const CHECKOUT_USER_STORAGE_KEY = "iw_checkout_user";
 
@@ -31,6 +32,13 @@ export default function EnrollmentDashboard({ user }) {
   const [cart, setCart] = useState([]);
 
   const [step, setStep] = useState("programs");
+  const [highestStep, setHighestStep] = useState("programs");
+
+  const currentStepIndex = STEPS.indexOf(step);
+
+  function canGoToStep(targetStep) {
+    return STEP_ORDER.indexOf(targetStep) <= STEP_ORDER.indexOf(highestStep);
+  }
 
   const [cycles, setCycles] = useState([]);
 
@@ -439,8 +447,15 @@ export default function EnrollmentDashboard({ user }) {
 
     const existingCart = existingCarts?.[0];
 
+    // if (existingCart) {
+    //   setActiveCartId(existingCart.id);
+
+    //   return existingCart.id;
+    // }
     if (existingCart) {
       setActiveCartId(existingCart.id);
+      setStep(existingCart.current_step || "programs");
+      setHighestStep(existingCart.highest_step || "programs");
 
       return existingCart.id;
     }
@@ -449,14 +464,22 @@ export default function EnrollmentDashboard({ user }) {
 
     const { data: newCart, error } = await supabase
       .from("enrollment_carts")
+      // .insert({
+      //   person_id: activeUser.person_id,
+
+      //   registration_setting_id: cycleId,
+
+      //   status: "draft",
+
+      //   payment_status: "pending",
+      // })
       .insert({
         person_id: activeUser.person_id,
-
         registration_setting_id: cycleId,
-
         status: "draft",
-
         payment_status: "pending",
+        current_step: "programs",
+        highest_step: "programs",
       })
       .select()
       .single();
@@ -504,12 +527,41 @@ export default function EnrollmentDashboard({ user }) {
     }
   }
 
-  async function updateStep(nextStep) {
-    setStep(nextStep);
+  // async function updateStep(nextStep) {
+  //   setStep(nextStep);
 
-    if (selectedCycle?.id) {
-      localStorage.setItem(stepStorageKey(selectedCycle.id), nextStep);
+  //   if (selectedCycle?.id) {
+  //     localStorage.setItem(stepStorageKey(selectedCycle.id), nextStep);
+  //   }
+  // }
+  function isStepAllowed(targetStep, highestStep) {
+    return STEP_ORDER.indexOf(targetStep) <= STEP_ORDER.indexOf(highestStep);
+  }
+
+  async function updateStep(nextStep) {
+    const currentHighestIndex = STEP_ORDER.indexOf(highestStep);
+    const nextIndex = STEP_ORDER.indexOf(nextStep);
+
+    const nextHighestStep =
+      nextIndex > currentHighestIndex ? nextStep : highestStep;
+
+    const { error } = await supabase
+      .from("enrollment_carts")
+      .update({
+        current_step: nextStep,
+        highest_step: nextHighestStep,
+      })
+      .eq("id", activeCartId)
+      .eq("person_id", currentUser.person_id);
+
+    if (error) {
+      console.error(error);
+      alert("Could not update registration step.");
+      return;
     }
+
+    setStep(nextStep);
+    setHighestStep(nextHighestStep);
   }
 
   function renderStep() {
@@ -715,7 +767,7 @@ export default function EnrollmentDashboard({ user }) {
         </div>
 
         <div className="flex flex-wrap gap-4 mt-8">
-          {STEPS.map((s, index) => {
+          {/* {STEPS.map((s, index) => {
             const active = step === s;
 
             return (
@@ -737,6 +789,31 @@ export default function EnrollmentDashboard({ user }) {
               >
                 {index + 1}. {s.toUpperCase()}
               </div>
+            );
+          })} */}
+          {STEPS.map((s, index) => {
+            const active = step === s;
+            const unlocked = canGoToStep(s);
+
+            return (
+              <button
+                key={s}
+                type="button"
+                disabled={!unlocked}
+                onClick={() => updateStep(s)}
+                className={`
+        px-5 py-3 rounded-2xl text-sm font-medium border transition
+        ${
+          active
+            ? "bg-[#0f5b54] text-white border-[#0f5b54]"
+            : unlocked
+              ? "bg-white text-gray-600 border-gray-300 hover:border-[#0f5b54]"
+              : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+        }
+      `}
+              >
+                {index + 1}. {s.toUpperCase()}
+              </button>
             );
           })}
         </div>

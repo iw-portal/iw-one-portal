@@ -357,17 +357,19 @@ const OPDPage = ({ user }) => {
 
     if (status === "for_review") {
       updates.released_at = new Date().toISOString();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 5);
       await supabase.from("notifications").insert({
         title: "Your OPD is ready for review",
         message:
           "Please review your One Page Description and submit any comments or requested changes.",
-        role_target: person.role,
+        role_target: null,
         person_id: person.id,
         link_url:
           person.role === "member"
             ? "/one-portal/member/opd-review"
             : "/one-portal/volunteer/opd-review",
-        expires_at: null,
+        expires_at: expiresAt,
       });
       const reviewUrl =
         person.role === "member"

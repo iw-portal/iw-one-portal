@@ -175,12 +175,12 @@ export default function SmallBusiness() {
           </ul>
 
           <a
-            href="https://forms.gle/8Z8jTcsXD16wMmgo9"
+            href="https://shop-inclusiveworld.netlify.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block mt-6 bg-[#e16a5b] text-white px-5 py-2 text-xl rounded hover:bg-[#cf5b4c]"
           >
-            Order Now
+            Shop
           </a>
         </div>
 
