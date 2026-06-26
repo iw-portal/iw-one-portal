@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../../../../lib/supabase";
+import { CiCircleCheck } from "react-icons/ci";
 
 const LEARNING_OPTIONS = [
   "Visual",
@@ -18,6 +19,7 @@ const DREAM_OPTIONS = [
 
 export default function EnrollmentProfile({ user, onNext, onBack }) {
   const [loading, setLoading] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
 
   const [learningStyles, setLearningStyles] = useState([]);
 
@@ -122,6 +124,9 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
       ...prev,
       ...data,
     }));
+    if (data.completed_at) {
+      setLastSaved(new Date(data.completed_at));
+    }
   }
 
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
@@ -219,12 +224,25 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
 
       return;
     }
-
+    setLastSaved(new Date());
     onNext();
   }
 
   return (
     <div className="space-y-8">
+      <div className="sticky bottom-6">
+        <button
+          onClick={onBack}
+          className="
+              px-6
+              py-3
+              rounded-2xl
+              border
+            "
+        >
+          Back
+        </button>
+      </div>
       <div className="bg-white rounded-3xl shadow-sm border p-8">
         <h1 className="text-4xl font-bold text-[#0f5b54]">
           Enrollment Profile
@@ -234,6 +252,68 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
           Help us better understand the student so we can build a strong support
           and enrollment plan.
         </p>
+        {/* <div className="mt-4 flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+          <CiCircleCheck className="h-7 w-7" />
+          <span className="text-xl">
+            Your progress will be saved when you click{" "}
+            <span className="font-extrabold ">Continue to Payment</span>.
+            {lastSaved && (
+              <>
+                {" "}
+                Last saved{" "}
+                {new Date(lastSaved).toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+                .
+              </>
+            )}
+          </span>
+        </div> */}
+        <div
+          className={`
+    mt-5 inline-flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm
+    ${
+      lastSaved
+        ? "border-green-200 bg-green-50 text-green-700"
+        : "border-amber-200 bg-amber-50 text-amber-700"
+    }
+  `}
+        >
+          <CiCircleCheck
+            className={`h-5 w-5 flex-shrink-0 ${
+              lastSaved ? "text-green-600" : "text-amber-600"
+            }`}
+          />
+
+          <div className="leading-relaxed">
+            {lastSaved ? (
+              <>
+                <span className="font-semibold">Progress saved</span>
+                <span className="mx-2 text-green-400">•</span>
+                <span>
+                  Last saved on{" "}
+                  {lastSaved.toLocaleString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}{" "}
+                  PT
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-semibold">Progress not saved yet</span>
+                <span className="mx-2 text-amber-400">•</span>
+                <span>
+                  Click <strong>Continue to Payment</strong> to save this
+                  profile.
+                </span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
       {/* ======================================== */}
       {/* LEARNING */}
@@ -290,7 +370,7 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
         />
       </Section>
 
-      <Section title="Experience With Programs & Technology">
+      {/* <Section title="Experience With Programs & Technology">
         <div className="grid md:grid-cols-2 gap-6">
           <BooleanSelect
             label="Experience with Web Development?"
@@ -334,7 +414,7 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
             onChange={(v) => update("exp_ai", v)}
           />
         </div>
-      </Section>
+      </Section> */}
 
       {/* ======================================== */}
       {/* ABOUT */}
@@ -345,11 +425,11 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
           value={form.about_great}
           onChange={(v) => update("about_great", v)}
         />
-        <Textarea
+        {/* <Textarea
           label="Who are the important people in your life?"
           value={form.about_team}
           onChange={(v) => update("about_team", v)}
-        />
+        /> */}
         <Textarea
           label="What do you like to do?"
           value={form.about_likes}
@@ -361,15 +441,15 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
           onChange={(v) => update("about_learn", v)}
         />
         <Textarea
-          label="Hobbies"
+          label="Hobbies & Activities"
           value={form.hobbies}
           onChange={(v) => update("hobbies", v)}
         />
-        <Textarea
-          label="Activities"
+        {/* <Textarea
+          label=""
           value={form.activities}
           onChange={(v) => update("activities", v)}
-        />
+        /> */}
         <Textarea
           label="Favorite Foods"
           value={form.favorite_food}
@@ -418,7 +498,7 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
       {/* SUPPORT */}
       {/* ======================================== */}
       <Section title="Support & Accessibility">
-        <Textarea
+        {/* <Textarea
           label="What is important TO you?"
           value={form.important_to}
           onChange={(v) => update("important_to", v)}
@@ -428,7 +508,7 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
           label="What is important FOR you?"
           value={form.important_for}
           onChange={(v) => update("important_for", v)}
-        />
+        /> */}
 
         <Textarea
           label="Support Devices"
@@ -653,7 +733,7 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
               font-medium
             "
           >
-            {loading ? "Saving..." : "Continue to Payment"}
+            {loading ? "Saving..." : "Save & Continue to Payment"}
           </button>
         </div>
       </div>

@@ -21,7 +21,7 @@ const buttons = [
   },
   {
     id: 4,
-    title: "Fall 2025-26 Weekend Classes Schedule",
+    title: "Vocational Classes Schedule",
     toPointTo: "/skills/ay25_26_calendar",
   },
 ];
