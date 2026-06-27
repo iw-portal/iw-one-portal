@@ -530,6 +530,10 @@ const PeopleManagement = () => {
     });
   };
 
+  const hasCompletedVolunteerInterestForm = (person) =>
+    person?.volunteerApplication?.interest_form_completed === true ||
+    person?.volunteerApplication?.interest_form_completed === "true";
+
   const assignProgramToPerson = async (programIdOverride = null) => {
     const programId = programIdOverride || selectedProgramId;
     if (!selectedPerson || !programId) return;
@@ -1145,6 +1149,18 @@ const PeopleManagement = () => {
                   </Section>
 
                   <Section title="Volunteer Program Preferences">
+                    {!hasCompletedVolunteerInterestForm(selectedPerson) && (
+                      <div className="mb-4 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+                        <p className="font-semibold">
+                          Interest form not submitted
+                        </p>
+                        <p className="mt-1">
+                          These preferences were saved automatically as a draft.
+                          Please ask the volunteer to submit the interest form
+                          before assigning a program.
+                        </p>
+                      </div>
+                    )}
                     {selectedPerson.volunteerApplication?.selected_programs &&
                     Object.keys(
                       selectedPerson.volunteerApplication.selected_programs,
@@ -1177,9 +1193,14 @@ const PeopleManagement = () => {
                                   onClick={() =>
                                     assignProgramToPerson(programId)
                                   }
+                                  // disabled={
+                                  //   selectedPerson.volunteerApplication
+                                  //     ?.interest_form_completed !== true
+                                  // }
                                   disabled={
-                                    selectedPerson.volunteerApplication
-                                      ?.interest_form_completed !== true
+                                    !hasCompletedVolunteerInterestForm(
+                                      selectedPerson,
+                                    )
                                   }
                                   className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
