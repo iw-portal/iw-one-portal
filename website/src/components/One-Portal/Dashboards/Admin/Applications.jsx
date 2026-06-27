@@ -206,7 +206,7 @@ const AdminApplications = () => {
   //   }
   // };
 
-  const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
+  // const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
 
   const approve = async (app) => {
     try {
@@ -215,7 +215,7 @@ const AdminApplications = () => {
           ? "/api/volunteer_email"
           : "/api/member_email";
 
-      const url = `${API_BASE_URL}${endpoint}`;
+      // const url = `${API_BASE_URL}${endpoint}`;
 
       const table =
         app.application_type === "volunteer"
@@ -239,7 +239,7 @@ const AdminApplications = () => {
       // SEND EMAIL
       // =====================================================
 
-      const response = await fetch(url, {
+      const response = await fetch(endpoint, {
         method: "POST",
 
         headers: {
@@ -262,9 +262,18 @@ const AdminApplications = () => {
 
       console.log("BREVO STATUS:", response.status);
 
+      // const result = await response.json();
+
+      // console.log(result);
+
+      // alert("Application approved and email sent!");
       const result = await response.json();
 
       console.log(result);
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to send email.");
+      }
 
       alert("Application approved and email sent!");
 
@@ -286,7 +295,7 @@ const AdminApplications = () => {
           ? "/api/volunteer_email"
           : "/api/member_email";
 
-      const url = `${API_BASE_URL}${endpoint}`;
+      // const url = `${API_BASE_URL}${endpoint}`;
 
       const table =
         app.application_type === "volunteer"
@@ -334,7 +343,7 @@ const AdminApplications = () => {
       //     ? "/api/volunteer_email"
       //     : "/api/member_email";
 
-      const response = await fetch(url, {
+      const response = await fetch(endpoint, {
         method: "POST",
 
         headers: {
@@ -355,9 +364,18 @@ const AdminApplications = () => {
         }),
       });
 
+      // const result = await response.json();
+
+      // console.log(result);
+
+      // alert("Application rejected and email sent!");
       const result = await response.json();
 
       console.log(result);
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to send email.");
+      }
 
       alert("Application rejected and email sent!");
 
