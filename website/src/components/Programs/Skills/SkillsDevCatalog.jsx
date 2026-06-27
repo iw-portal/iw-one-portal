@@ -7,16 +7,16 @@ const buttons = [
   //   title: "Register for Classes",
   //   toPointTo: "",
   // },
-  {
-    id: 2,
-    title: "View Calendar",
-    toPointTo: "",
-  },
-  {
-    id: 3,
-    title: "Our Skills Development Partners",
-    toPointTo: "",
-  },
+  // {
+  //   id: 2,
+  //   title: "View Calendar",
+  //   toPointTo: "",
+  // },
+  // {
+  //   id: 3,
+  //   title: "Our Skills Development Partners",
+  //   toPointTo: "",
+  // },
 ];
 
 function formatCategory(category) {

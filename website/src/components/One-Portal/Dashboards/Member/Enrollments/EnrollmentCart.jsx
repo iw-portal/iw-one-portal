@@ -127,6 +127,28 @@ export default function EnrollmentCart({
     }
   }, [cycle]);
 
+  useEffect(() => {
+    async function fetchComments() {
+      if (!activeCartId) return;
+
+      const { data, error } = await supabase
+        .from("enrollment_carts")
+        .select("member_comments")
+        .eq("id", activeCartId)
+        .eq("person_id", user.person_id)
+        .single();
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      setComments(data?.member_comments || "");
+    }
+
+    fetchComments();
+  }, [activeCartId, user.person_id]);
+
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   function isSelected(programId) {
