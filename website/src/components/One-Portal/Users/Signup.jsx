@@ -668,22 +668,20 @@ const Signup = () => {
       }
 
       try {
-        const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
-        const response = await fetch(
-          `${API_BASE_URL}/api/account_created_email`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: form.email,
-              fname: form.firstName,
-              lname: form.lastName,
-              username,
-            }),
+        // const API_BASE_URL = import.meta.env.VITE_PUBLIC_APP_URL;
+        const endpoint = "/api/account_created_email";
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            email: form.email,
+            fname: form.firstName,
+            lname: form.lastName,
+            username,
+          }),
+        });
 
         const result = await response.json();
 
