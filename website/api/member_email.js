@@ -26,9 +26,17 @@ export default async function handler(req, res) {
   try {
     const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
-    const { email, fname, lname, decision, application_id } = req.body;
+    // const { email, fname, lname, decision, application_id } = req.body;
+    const { email, fname, lname, decision, application_id, rejection_reason } =
+      req.body;
 
     const approved = decision === "approved";
+
+    if (!approved && !rejection_reason?.trim()) {
+      return res.status(400).json({
+        error: "Missing rejection reason",
+      });
+    }
 
     if (!email || !fname || !decision) {
       return res.status(400).json({
@@ -370,10 +378,10 @@ export default async function handler(req, res) {
                 font-size:12px;
                 line-height:20px;
                 margin-top:4px;
-                font-family:Arial, Helvetica, sans-serif;
+                font-family:cursive;
               "
             >
-              Enabling Opportunities for the Differently Abled
+              Where Abilities Lead the Way
             </div>
 
           </td>
@@ -544,6 +552,38 @@ export default async function handler(req, res) {
             </div>
 
             <div
+  style="
+    margin-top:28px;
+    background:#fbf7f7;
+    border:1px solid #f0e6e6;
+    border-radius:18px;
+    padding:24px;
+  "
+>
+  <div
+    style="
+      color:#6b1f2a;
+      font-size:18px;
+      font-weight:bold;
+      margin-bottom:10px;
+    "
+  >
+    Reason for Decision
+  </div>
+
+  <div
+    style="
+      color:#665858;
+      font-size:15px;
+      line-height:28px;
+      white-space:pre-wrap;
+    "
+  >
+    ${rejection_reason}
+  </div>
+</div>
+
+            <div
               style="
                 margin-top:24px;
                 color:#665858;
@@ -682,10 +722,10 @@ export default async function handler(req, res) {
                             font-size:12px;
                             line-height:20px;
                             margin-top:4px;
-                            font-family:Arial, Helvetica, sans-serif;
+                            font-family: cursive;
                           "
                         >
-                          Enabling Opportunities for the Differently Abled
+                          Where Abilities Lead the Way
                         </div>
 
                       </td>

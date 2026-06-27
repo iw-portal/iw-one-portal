@@ -6,6 +6,9 @@ const AdminApplications = () => {
   const [selected, setSelected] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectingApp, setRejectingApp] = useState(null);
 
   useEffect(() => {
     fetchApps();
@@ -294,10 +297,24 @@ const AdminApplications = () => {
       // UPDATE STATUS
       // =====================================================
 
+      // const { error } = await supabase
+      //   .from(table)
+      //   .update({
+      //     status: "rejected",
+      //   })
+      //   .eq("id", app.id);
+      if (!rejectionReason.trim()) {
+        alert(
+          "Please enter a rejection reason before rejecting this application.",
+        );
+        return;
+      }
+
       const { error } = await supabase
         .from(table)
         .update({
           status: "rejected",
+          rejection_reason: rejectionReason.trim(),
         })
         .eq("id", app.id);
 
@@ -334,6 +351,7 @@ const AdminApplications = () => {
             app.application_type === "volunteer" ? app.last_name : app.lname,
 
           decision: "rejected",
+          rejection_reason: rejectionReason.trim(),
         }),
       });
 
@@ -346,6 +364,9 @@ const AdminApplications = () => {
       fetchApps();
 
       setSelected(null);
+      setShowRejectModal(false);
+      setRejectingApp(null);
+      setRejectionReason("");
     } catch (err) {
       console.error(err);
 
@@ -414,7 +435,11 @@ const AdminApplications = () => {
           return (
             <div
               key={app.id}
-              onClick={() => setSelected(app)}
+              // onClick={() => setSelected(app)}
+              onClick={() => {
+                setSelected(app);
+                setRejectionReason(app.rejection_reason || "");
+              }}
               className="cursor-pointer hover:scale-[1.02] transition"
             >
               <div className="bg-white border border-slate-700 rounded-2xl p-5 h-full flex flex-col justify-between">
@@ -549,8 +574,21 @@ const AdminApplications = () => {
                 })}
             </div>
 
-            {selected.status === "pending" && (
+            {/* {selected.status === "pending" && (
               <div className="mt-8 flex gap-4">
+                <div className="mt-8">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Rejection Reason
+                  </label>
+
+                  <textarea
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={4}
+                    placeholder="Enter the reason that should be included in the rejection email..."
+                    className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f5b54]/30"
+                  />
+                </div>
                 <button
                   onClick={() => approve(selected)}
                   className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl"
@@ -565,7 +603,72 @@ const AdminApplications = () => {
                   Reject
                 </button>
               </div>
+            )} */}
+
+            {selected.status === "pending" && (
+              <div className="mt-8 flex gap-4">
+                <button
+                  onClick={() => approve(selected)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl"
+                >
+                  Approve
+                </button>
+
+                <button
+                  onClick={() => {
+                    setRejectingApp(selected);
+                    setRejectionReason("");
+                    setShowRejectModal(true);
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl"
+                >
+                  Reject
+                </button>
+              </div>
             )}
+          </div>
+        </div>
+      )}
+      {showRejectModal && rejectingApp && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex justify-center items-center px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <h2 className="text-xl font-bold text-slate-900">
+              Rejection Reason
+            </h2>
+
+            <p className="text-sm text-slate-500 mt-2">
+              Please enter the reason that should be included in the rejection
+              email.
+            </p>
+
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows={5}
+              className="mt-4 w-full border border-slate-300 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f5b54]/30"
+              placeholder="Example: The application is missing required information..."
+            />
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectingApp(null);
+                  setRejectionReason("");
+                }}
+                className="px-5 py-2 border rounded-xl"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => reject(rejectingApp)}
+                disabled={!rejectionReason.trim()}
+                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirm Reject
+              </button>
+            </div>
           </div>
         </div>
       )}

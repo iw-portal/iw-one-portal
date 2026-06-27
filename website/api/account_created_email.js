@@ -293,10 +293,10 @@ export default async function handler(req, res) {
                 font-size:12px;
                 line-height:20px;
                 margin-top:4px;
-                font-family:Arial, Helvetica, sans-serif;
+                font-family:cursive;
               "
             >
-              Enabling Opportunities for the Differently Abled
+              Where Abilities Lead the Way
             </div>
 
           </td>
