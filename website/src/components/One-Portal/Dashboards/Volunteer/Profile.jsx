@@ -88,6 +88,7 @@ const VolunteerProfile = ({ user }) => {
   const [assignedPrograms, setAssignedPrograms] = useState([]);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({});
+  const [username, setUsername] = useState("");
 
   // useEffect(() => {
   //   fetchProfile();
@@ -106,6 +107,22 @@ const VolunteerProfile = ({ user }) => {
   }, [data]);
 
   /* ---------------- FETCH PROFILE ---------------- */
+  // const fetchProfile = async () => {
+  //   const { data, error } = await supabase
+  //     .from("volunteer_applications")
+  //     .select("*")
+  //     .eq("email", user.email)
+  //     .single();
+
+  //   if (error) {
+  //     console.error(error);
+  //     return;
+  //   }
+
+  //   setData(data);
+  //   setFormData(data || {});
+  // };
+
   const fetchProfile = async () => {
     const { data, error } = await supabase
       .from("volunteer_applications")
@@ -118,6 +135,17 @@ const VolunteerProfile = ({ user }) => {
       return;
     }
 
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("username")
+      .eq("person_id", user.person_id)
+      .maybeSingle();
+
+    if (userError) {
+      console.error("Error fetching username:", userError);
+    }
+
+    setUsername(userData?.username || "");
     setData(data);
     setFormData(data || {});
   };
@@ -836,6 +864,14 @@ ${data.happiness || "-"}
               <EditableField label="First Name" value={formData.first_name} />
               <EditableField label="Last Name" value={formData.last_name} />
               <EditableField label="Email" value={formData.email} />
+              <EditableField
+                label="Username"
+                value={username}
+                readOnly
+                multiline={false}
+                editing={editing}
+                updateField={updateField}
+              />
               <EditableField label="Phone" value={formData.phone} />
               <EditableField label="Date of Birth" value={formData.dob} />
               <EditableField
