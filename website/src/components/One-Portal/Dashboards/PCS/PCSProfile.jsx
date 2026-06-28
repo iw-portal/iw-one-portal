@@ -21,6 +21,7 @@ const Input = ({ label, value, editable = false, onChange }) => {
 const PCSProfile = ({ user, setUser }) => {
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [username, setUsername] = useState("");
 
   const [form, setForm] = useState({
     first_name: "",
@@ -81,6 +82,7 @@ const PCSProfile = ({ user, setUser }) => {
     };
 
     setProfile(combined);
+    setUsername(userData?.username || "");
 
     setForm({
       first_name: personData?.fname || "",
@@ -193,6 +195,9 @@ const PCSProfile = ({ user, setUser }) => {
 
             <div className="md:col-span-2">
               <Input label="Email" value={profile?.email} />
+            </div>
+            <div className="md:col-span-2">
+              <Input label="Username" value={username} />
             </div>
 
             <Input label="Role" value={profile?.role} />

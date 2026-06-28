@@ -67,6 +67,7 @@ const MemberProfile = ({ user }) => {
   const [editingPrograms, setEditingPrograms] = useState(false);
   const [availablePrograms, setAvailablePrograms] = useState([]);
   const [selectedPrograms, setSelectedPrograms] = useState([]);
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
     if (!user?.person_id) return;
@@ -81,14 +82,34 @@ const MemberProfile = ({ user }) => {
   }, [user?.person_id]);
 
   /* ---------------- FETCH PROFILE ---------------- */
-  const fetchPerson = async () => {
-    const { data, error } = await supabase
-      .from("people")
-      .select("*")
-      .eq("id", user.person_id)
-      .single();
+  // const fetchPerson = async () => {
+  //   const { data, error } = await supabase
+  //     .from("people")
+  //     .select("*")
+  //     .eq("id", user.person_id)
+  //     .single();
 
-    if (!error) setPerson(data);
+  //   if (!error) setPerson(data);
+  // };
+  const fetchPerson = async () => {
+    const [
+      { data: personData, error: personError },
+      { data: userData, error: userError },
+    ] = await Promise.all([
+      supabase.from("people").select("*").eq("id", user.person_id).single(),
+
+      supabase
+        .from("users")
+        .select("username")
+        .eq("person_id", user.person_id)
+        .maybeSingle(),
+    ]);
+
+    if (!personError) setPerson(personData);
+
+    if (!userError) {
+      setUsername(userData?.username || "");
+    }
   };
 
   const fetchApplication = async () => {
@@ -601,6 +622,14 @@ const MemberProfile = ({ user }) => {
               <Field label="Last Name" value={application?.lname} />
 
               <Field label="Email" value={application?.email} />
+              <EditableField
+                label="Username"
+                value={username}
+                readOnly
+                multiline={false}
+                editing={editing}
+                updateField={updateField}
+              />
 
               <EditableField
                 label="Phone"
