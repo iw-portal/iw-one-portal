@@ -3,6 +3,31 @@ import { supabase } from "../../../../lib/supabase";
 
 const ROLE_FILTERS = ["all", "member", "volunteer", "lead", "admin"];
 const STATUS_FILTERS = ["all", "active", "inactive"];
+const PAYMENT_FILTERS = ["all", "paid", "unpaid", "override"];
+
+const OVERRIDE_ADMIN_USERNAMES = ["pranmaga", "rohipanc87", "madhkris93"];
+
+const generateManualTransactionId = (paymentMethod, orderId) => {
+  const now = new Date();
+
+  const date =
+    now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, "0") +
+    String(now.getDate()).padStart(2, "0");
+
+  const time =
+    String(now.getHours()).padStart(2, "0") +
+    String(now.getMinutes()).padStart(2, "0") +
+    String(now.getSeconds()).padStart(2, "0");
+
+  const mode = paymentMethod
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+  return `iwpay_man_${mode}_order_${orderId}`;
+};
 
 const Section = ({ title, children }) => (
   <div className="bg-white border rounded-2xl shadow-sm p-5">
@@ -76,6 +101,10 @@ const getAllowedRoleChanges = (currentRole) => {
   }
 };
 
+const getUsername = (person) => {
+  return person?.users?.[0]?.username || "-";
+};
+
 const PeopleManagement = () => {
   const [people, setPeople] = useState([]);
   const [programs, setPrograms] = useState([]);
@@ -95,10 +124,38 @@ const PeopleManagement = () => {
   const [roleModalPerson, setRoleModalPerson] = useState(null);
   const [newRole, setNewRole] = useState("");
   const [enrollmentCarts, setEnrollmentCarts] = useState([]);
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [paymentModalPerson, setPaymentModalPerson] = useState(null);
+  const [manualPaymentForm, setManualPaymentForm] = useState({
+    payment_method: "",
+    amount_received: "",
+    payment_notes: "",
+  });
 
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  // useEffect(() => {
+  //   const storedUser = JSON.parse(localStorage.getItem("iw_user") || "{}");
+  //   const username = storedUser.username;
+  //   console.log(username);
+  // }, []);
+
+  useEffect(() => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("iw_user") || "{}");
+      setCurrentUser(storedUser);
+    } catch (error) {
+      console.error("Failed to parse iw_user", error);
+      setCurrentUser(null);
+    }
+  }, []);
+
+  const canOverridePayments =
+    currentUser?.role === "admin" &&
+    OVERRIDE_ADMIN_USERNAMES.includes(currentUser?.username);
 
   const fetchEnrollmentCarts = async () => {
     const { data, error } = await supabase
@@ -159,21 +216,53 @@ const PeopleManagement = () => {
   const fetchPeople = async () => {
     const { data, error } = await supabase
       .from("people")
+      //   .select(
+      //     `
+      //   *,
+      //   person_programs (
+      //     id,
+      //     status,
+      //     role,
+      //     program_id,
+      //     programs (
+      //       id,
+      //       course_title,
+      //       course_code
+      //     )
+      //   )
+      // `,
+      //   )
       .select(
         `
-      *,
-      person_programs (
-        id,
-        status,
-        role,
-        program_id,
-        programs (
-          id,
-          course_title,
-          course_code
-        )
-      )
-    `,
+  *,
+  users (
+    username
+  ),
+  enrollment_orders (
+    id,
+    payment_status,
+    status,
+    total_amount,
+    transaction_id,
+    payment_method,
+    amount_received,
+    paid_at,
+    override_reason,
+    overridden_at,
+    created_at
+  ),
+  person_programs (
+    id,
+    status,
+    role,
+    program_id,
+    programs (
+      id,
+      course_title,
+      course_code
+    )
+  )
+`,
       )
       .order("fname");
 
@@ -336,6 +425,16 @@ const PeopleManagement = () => {
     };
   };
 
+  const getLatestOrder = (person) => {
+    return [...(person?.enrollment_orders || [])].sort(
+      (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0),
+    )[0];
+  };
+
+  const getPaymentStatus = (person) => {
+    return getLatestOrder(person)?.payment_status || "unpaid";
+  };
+
   const filteredPeople = useMemo(() => {
     return people.filter((person) => {
       const term = search.toLowerCase();
@@ -353,9 +452,12 @@ const PeopleManagement = () => {
         (statusFilter === "active" && person.is_active) ||
         (statusFilter === "inactive" && !person.is_active);
 
-      return matchesSearch && matchesRole && matchesStatus;
+      const matchesPayment =
+        paymentFilter === "all" || getPaymentStatus(person) === paymentFilter;
+
+      return matchesSearch && matchesRole && matchesStatus && matchesPayment;
     });
-  }, [people, search, roleFilter, statusFilter]);
+  }, [people, search, roleFilter, statusFilter, paymentFilter]);
 
   const counts = useMemo(() => {
     return {
@@ -366,6 +468,9 @@ const PeopleManagement = () => {
       admin: people.filter((p) => p.role === "admin").length,
       active: people.filter((p) => p.is_active).length,
       inactive: people.filter((p) => !p.is_active).length,
+      paid: people.filter((p) => getPaymentStatus(p) === "paid").length,
+      unpaid: people.filter((p) => getPaymentStatus(p) === "unpaid").length,
+      override: people.filter((p) => getPaymentStatus(p) === "override").length,
     };
   }, [people]);
 
@@ -433,34 +538,73 @@ const PeopleManagement = () => {
     await fetchPeople();
   };
 
-  //   const refreshSelectedPerson = async (personId) => {
-  //     await fetchAllData();
+  // const refreshSelectedPerson = async (personId) => {
+  //   await Promise.all([
+  //     fetchPeople(),
+  //     fetchPrograms(),
+  //     fetchMemberApplications(),
+  //     fetchVolunteerApplications(),
+  //     fetchEnrollments(),
+  //   ]);
 
-  //     const { data, error } = await supabase
-  //       .from("people")
-  //       .select(
-  //         `
-  //         *,
-  //         person_programs (
-  //           id,
-  //           status,
-  //           role,
-  //           program_id,
-  //           programs (
-  //             id,
-  //             course_title,
-  //             course_code
-  //           )
-  //         )
-  //       `,
+  //   const { data: personData, error } = await supabase
+  //     .from("people")
+  //     .select(
+  //       `
+  //     *,
+  //     person_programs (
+  //       id,
+  //       status,
+  //       role,
+  //       program_id,
+  //       programs (
+  //         id,
+  //         course_title,
+  //         course_code
   //       )
-  //       .eq("id", personId)
-  //       .single();
+  //     )
+  //   `,
+  //     )
+  //     .eq("id", personId)
+  //     .single();
 
-  //     if (!error && data) {
-  //       setSelectedPerson(data);
-  //     }
-  //   };
+  //   if (error || !personData) return;
+
+  //   const { data: memberApps } = await supabase
+  //     .from("member_applications")
+  //     .select("*");
+
+  //   const { data: volunteerApps } = await supabase
+  //     .from("volunteer_applications")
+  //     .select("*");
+
+  //   const { data: enrollmentData } = await supabase
+  //     .from("enrollments")
+  //     .select(
+  //       `
+  //     *,
+  //     programs (
+  //       id,
+  //       course_title,
+  //       course_code,
+  //       category
+  //     )
+  //   `,
+  //     )
+  //     .eq("student_id", personId);
+
+  //   const email = personData.email?.toLowerCase();
+
+  //   setSelectedPerson({
+  //     ...personData,
+  //     memberApplication:
+  //       memberApps?.find((app) => app.email?.toLowerCase() === email) || null,
+  //     volunteerApplication:
+  //       volunteerApps?.find((app) => app.email?.toLowerCase() === email) ||
+  //       null,
+  //     enrollments: enrollmentData || [],
+  //   });
+  // };
 
   const refreshSelectedPerson = async (personId) => {
     await Promise.all([
@@ -469,6 +613,8 @@ const PeopleManagement = () => {
       fetchMemberApplications(),
       fetchVolunteerApplications(),
       fetchEnrollments(),
+      fetchEnrollmentCarts(),
+      fetchProgramAssignmentCounts(),
     ]);
 
     const { data: personData, error } = await supabase
@@ -476,6 +622,22 @@ const PeopleManagement = () => {
       .select(
         `
       *,
+      users (
+        username
+      ),
+      enrollment_orders (
+        id,
+        payment_status,
+        status,
+        total_amount,
+        transaction_id,
+        payment_method,
+        amount_received,
+        paid_at,
+        override_reason,
+        overridden_at,
+        created_at
+      ),
       person_programs (
         id,
         status,
@@ -486,13 +648,15 @@ const PeopleManagement = () => {
           course_title,
           course_code
         )
-      )
+      ),
     `,
       )
       .eq("id", personId)
       .single();
 
     if (error || !personData) return;
+
+    const email = personData.email?.toLowerCase();
 
     const { data: memberApps } = await supabase
       .from("member_applications")
@@ -517,7 +681,11 @@ const PeopleManagement = () => {
       )
       .eq("student_id", personId);
 
-    const email = personData.email?.toLowerCase();
+    const { data: cartData } = await supabase
+      .from("enrollment_carts")
+      .select("id, person_id, member_comments, created_at")
+      .eq("person_id", personId)
+      .order("created_at", { ascending: false });
 
     setSelectedPerson({
       ...personData,
@@ -527,12 +695,106 @@ const PeopleManagement = () => {
         volunteerApps?.find((app) => app.email?.toLowerCase() === email) ||
         null,
       enrollments: enrollmentData || [],
+      latestMemberCart: cartData?.[0] || null,
     });
   };
 
   const hasCompletedVolunteerInterestForm = (person) =>
     person?.volunteerApplication?.interest_form_completed === true ||
     person?.volunteerApplication?.interest_form_completed === "true";
+
+  const markMemberAsOverride = async (person) => {
+    if (!canOverridePayments) {
+      alert("You do not have permission to override payments.");
+      return;
+    }
+
+    const latestOrder = getLatestOrder(person);
+
+    if (!latestOrder) {
+      alert("No enrollment order found for this member.");
+      return;
+    }
+
+    const reason = window.prompt("Enter override reason:");
+    if (!reason?.trim()) return;
+
+    const { error } = await supabase
+      .from("enrollment_orders")
+      .update({
+        payment_status: "override",
+        override_reason: reason.trim(),
+        overridden_by: currentUser.id,
+        overridden_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", latestOrder.id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await refreshSelectedPerson(person.id);
+
+    alert("Member marked as override.");
+  };
+
+  const markOverrideAsPaid = async () => {
+    if (!paymentModalPerson || !canOverridePayments) return;
+
+    const latestOrder = getLatestOrder(paymentModalPerson);
+
+    if (!latestOrder) {
+      alert("No enrollment order found.");
+      return;
+    }
+
+    if (
+      !manualPaymentForm.payment_method.trim() ||
+      !manualPaymentForm.amount_received
+    ) {
+      alert("Payment method and amount received are required.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("enrollment_orders")
+      .update({
+        payment_status: "paid",
+        status: "paid",
+        transaction_id: generateManualTransactionId(
+          manualPaymentForm.payment_method,
+          latestOrder.id.slice(0, 8),
+        ),
+        payment_method: manualPaymentForm.payment_method.trim(),
+        amount_received: Number(manualPaymentForm.amount_received),
+        payment_notes: manualPaymentForm.payment_notes.trim(),
+        manual_payment_entered_by: currentUser.id,
+        paid_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", latestOrder.id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const personId = paymentModalPerson.id;
+
+    setPaymentModalPerson(null);
+    setManualPaymentForm({
+      payment_method: "",
+      amount_received: "",
+      payment_notes: "",
+    });
+
+    await refreshSelectedPerson(personId);
+    await fetchPeople();
+
+    alert("Payment marked as paid.");
+  };
 
   const assignProgramToPerson = async (programIdOverride = null) => {
     const programId = programIdOverride || selectedProgramId;
@@ -553,7 +815,8 @@ const PeopleManagement = () => {
         .from("enrollment_orders")
         .select("id")
         .eq("person_id", selectedPerson.id)
-        .eq("payment_status", "paid")
+        // .eq("payment_status", "paid")
+        .in("payment_status", ["paid", "override"])
         .limit(1)
         .maybeSingle();
 
@@ -564,7 +827,7 @@ const PeopleManagement = () => {
 
       if (!paidOrder) {
         alert(
-          "This member has not submitted enrollment preferences by completing payment yet. Please ask them to complete enrollment before assigning a program.",
+          "This member has not paid and does not have an admin override. Please mark them as override before assigning a program.",
         );
         return;
       }
@@ -796,7 +1059,7 @@ const PeopleManagement = () => {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-4">
         {STATUS_FILTERS.map((status) => (
           <button
             key={status}
@@ -812,6 +1075,24 @@ const PeopleManagement = () => {
               : status === "active"
                 ? `Active (${counts.active})`
                 : `Inactive (${counts.inactive})`}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-3 mb-6">
+        {PAYMENT_FILTERS.map((status) => (
+          <button
+            key={status}
+            onClick={() => setPaymentFilter(status)}
+            className={`px-4 py-2 rounded-xl border transition ${
+              paymentFilter === status
+                ? "bg-[#0f5b54] text-white border-[#0f5b54]"
+                : "bg-white border-gray-300"
+            }`}
+          >
+            {status === "all"
+              ? "All Payments"
+              : `${status.charAt(0).toUpperCase() + status.slice(1)} (${counts[status]})`}
           </button>
         ))}
       </div>
@@ -997,7 +1278,110 @@ const PeopleManagement = () => {
                         label="Emergency Phone"
                         value={selectedPerson.memberApplication?.e_phone1}
                       />
+                      <Field
+                        label="Username"
+                        value={getUsername(selectedPerson)}
+                      />
                     </Grid>
+                  </Section>
+                  {canOverridePayments && (
+                    <Section title="Admin Payment Status">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-sm text-gray-700">
+                          Current Payment Status:{" "}
+                          <b>
+                            {getPaymentStatus(selectedPerson).toUpperCase()}
+                          </b>
+                        </span>
+
+                        {getPaymentStatus(selectedPerson) === "unpaid" && (
+                          <button
+                            onClick={() => markMemberAsOverride(selectedPerson)}
+                            className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm"
+                          >
+                            Mark as Override
+                          </button>
+                        )}
+
+                        {getPaymentStatus(selectedPerson) === "override" && (
+                          <button
+                            onClick={() =>
+                              setPaymentModalPerson(selectedPerson)
+                            }
+                            className="bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
+                          >
+                            Mark as Paid
+                          </button>
+                        )}
+                      </div>
+                    </Section>
+                  )}
+                  <Section title="Transactions">
+                    {selectedPerson.enrollment_orders?.length > 0 ? (
+                      <div className="space-y-3">
+                        {[...selectedPerson.enrollment_orders]
+                          .sort(
+                            (a, b) =>
+                              new Date(b.created_at || 0) -
+                              new Date(a.created_at || 0),
+                          )
+                          .map((order) => (
+                            <div
+                              key={order.id}
+                              className="bg-gray-50 border rounded-lg p-3"
+                            >
+                              <div className="flex justify-between gap-3 flex-wrap">
+                                <p className="font-semibold">
+                                  {order.payment_status?.toUpperCase() ||
+                                    "UNPAID"}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  $
+                                  {order.amount_received ||
+                                    order.total_amount ||
+                                    0}
+                                </p>
+                              </div>
+
+                              <div className="grid sm:grid-cols-2 gap-2 mt-3 text-sm text-gray-700">
+                                <p>
+                                  <b>Transaction ID:</b>{" "}
+                                  {order.transaction_id || "-"}
+                                </p>
+                                <p>
+                                  <b>Payment Method:</b>{" "}
+                                  {order.payment_method || "-"}
+                                </p>
+                                <p>
+                                  <b>Paid At:</b>{" "}
+                                  {order.paid_at
+                                    ? new Date(order.paid_at).toLocaleString()
+                                    : "-"}
+                                </p>
+                                <p>
+                                  <b>Created At:</b>{" "}
+                                  {order.created_at
+                                    ? new Date(
+                                        order.created_at,
+                                      ).toLocaleString()
+                                    : "-"}
+                                </p>
+                                <p>
+                                  <b>Override Reason:</b>{" "}
+                                  {order.override_reason || "-"}
+                                </p>
+                                <p>
+                                  <b>Notes:</b> {order.payment_notes || "-"}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400">
+                        No transactions found.
+                      </p>
+                    )}
                   </Section>
                   <Section title="Member Enrollment Preferences">
                     {selectedPerson.enrollments?.length > 0 ? (
@@ -1016,11 +1400,24 @@ const PeopleManagement = () => {
                               </p>
                             </div>
 
-                            <button
+                            {/* <button
                               onClick={() =>
                                 assignProgramToPerson(enrollment.program_id)
                               }
                               className="bg-teal-700 text-white px-3 py-1 rounded text-xs"
+                            >
+                              Assign Choice #{index + 1}
+                            </button> */}
+                            <button
+                              disabled={
+                                !["paid", "override"].includes(
+                                  getPaymentStatus(selectedPerson),
+                                )
+                              }
+                              onClick={() =>
+                                assignProgramToPerson(enrollment.program_id)
+                              }
+                              className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Assign Choice #{index + 1}
                             </button>
@@ -1427,8 +1824,12 @@ const PeopleManagement = () => {
                         (selectedPerson.role === "volunteer" &&
                           selectedPerson.volunteerApplication
                             ?.interest_form_completed !== true) ||
+                        // (selectedPerson.role === "member" &&
+                        //   !selectedPerson.enrollments?.length)
                         (selectedPerson.role === "member" &&
-                          !selectedPerson.enrollments?.length)
+                          !["paid", "override"].includes(
+                            getPaymentStatus(selectedPerson),
+                          ))
                       }
                       onClick={() => assignProgramToPerson()}
                       className="bg-teal-800 text-white px-5 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1438,6 +1839,73 @@ const PeopleManagement = () => {
                   </div>
                 </Section>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {paymentModalPerson && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] px-4"
+          onClick={() => setPaymentModalPerson(null)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-4">Mark Payment as Paid</h2>
+
+            <input
+              className="w-full border rounded-lg p-3 mb-3"
+              placeholder="Payment method, e.g. Cash, Check, Zelle"
+              value={manualPaymentForm.payment_method}
+              onChange={(e) =>
+                setManualPaymentForm((prev) => ({
+                  ...prev,
+                  payment_method: e.target.value,
+                }))
+              }
+            />
+
+            <input
+              type="number"
+              className="w-full border rounded-lg p-3 mb-3"
+              placeholder="Amount received"
+              value={manualPaymentForm.amount_received}
+              onChange={(e) =>
+                setManualPaymentForm((prev) => ({
+                  ...prev,
+                  amount_received: e.target.value,
+                }))
+              }
+            />
+
+            <textarea
+              className="w-full border rounded-lg p-3 mb-4"
+              placeholder="Payment notes, check number, reference, etc."
+              value={manualPaymentForm.payment_notes}
+              onChange={(e) =>
+                setManualPaymentForm((prev) => ({
+                  ...prev,
+                  payment_notes: e.target.value,
+                }))
+              }
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setPaymentModalPerson(null)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={markOverrideAsPaid}
+                className="px-4 py-2 bg-[#0f5b54] text-white rounded-lg"
+              >
+                Save Payment
+              </button>
             </div>
           </div>
         </div>

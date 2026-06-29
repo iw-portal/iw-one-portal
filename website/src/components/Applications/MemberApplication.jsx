@@ -92,6 +92,7 @@ const MemberApplication = () => {
     e_phone1: "",
     e_phone2: "",
     e_email: "",
+    hear_about_us: [],
 
     // exp_web: null,
     // exp_scratch: null,
@@ -121,6 +122,24 @@ const MemberApplication = () => {
 
     // accommodations: "",
   });
+
+  const HEAR_ABOUT_OPTIONS = [
+    "Friend or Family",
+    "School",
+    "Social Media",
+    "Website",
+    "Community Event",
+    "Other",
+  ];
+
+  const toggleHearAboutUs = (option) => {
+    update(
+      "hear_about_us",
+      form.hear_about_us.includes(option)
+        ? form.hear_about_us.filter((item) => item !== option)
+        : [...form.hear_about_us, option],
+    );
+  };
 
   const update = (field, value) => {
     const updated = {
@@ -192,6 +211,12 @@ const MemberApplication = () => {
 
     if (!isValidPhone(form.phone)) {
       alert("Please enter a valid phone number.");
+      setLoading(false);
+      return;
+    }
+
+    if (form.hear_about_us.length === 0) {
+      alert("Please tell us how you heard about us.");
       setLoading(false);
       return;
     }
@@ -670,6 +695,25 @@ const MemberApplication = () => {
                 </button>
               );
             })}
+          </div>
+        </CardSection>
+
+        <CardSection title="How did you hear about us?">
+          <div className="grid md:grid-cols-2 gap-4">
+            {HEAR_ABOUT_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => toggleHearAboutUs(option)}
+                className={`border rounded-xl p-4 text-left ${
+                  form.hear_about_us.includes(option)
+                    ? "bg-[#eef8f7] border-[#0f5b54]"
+                    : "bg-white border-gray-200"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
           </div>
         </CardSection>
 
