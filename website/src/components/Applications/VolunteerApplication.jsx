@@ -102,6 +102,7 @@ const VolunteerApplication = () => {
     // volunteer_experience: "",
 
     accommodations: "",
+    hear_about_us: [],
   });
 
   const update = (field, value) => {
@@ -221,6 +222,24 @@ const VolunteerApplication = () => {
 
   const requiresParentInfo = form.age !== null && form.age < 18;
 
+  const HEAR_ABOUT_OPTIONS = [
+    "Friend or Family",
+    "School",
+    "Social Media",
+    "Website",
+    "Community Event",
+    "Other",
+  ];
+
+  const toggleHearAboutUs = (option) => {
+    update(
+      "hear_about_us",
+      form.hear_about_us.includes(option)
+        ? form.hear_about_us.filter((item) => item !== option)
+        : [...form.hear_about_us, option],
+    );
+  };
+
   const submit = async () => {
     setLoading(true);
 
@@ -233,6 +252,12 @@ const VolunteerApplication = () => {
 
       if (requiresParentInfo && !isValidEmail(form.parent_email)) {
         alert("Please enter a valid parent/guardian email address.");
+        setLoading(false);
+        return;
+      }
+
+      if (form.hear_about_us.length === 0) {
+        alert("Please tell us how you heard about us.");
         setLoading(false);
         return;
       }
@@ -652,6 +677,25 @@ const VolunteerApplication = () => {
               onChange={(v) => update("emergency_email", v)}
             />
           </Grid>
+        </CardSection>
+
+        <CardSection title="How did you hear about us?">
+          <div className="grid md:grid-cols-2 gap-4">
+            {HEAR_ABOUT_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => toggleHearAboutUs(option)}
+                className={`border rounded-xl p-4 text-left ${
+                  form.hear_about_us.includes(option)
+                    ? "bg-[#eef8f7] border-[#0f5b54]"
+                    : "bg-white border-gray-200"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
         </CardSection>
 
         {/* ===================================================== */}

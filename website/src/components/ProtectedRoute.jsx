@@ -7,7 +7,7 @@ export default function ProtectedRoute({ user, allowedRoles, children }) {
     return <Navigate to="/one-portal/login" replace />;
   }
 
-  console.log("User Role:", user.role);
+  // console.log("User Role:", user.role);
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/one-portal/login" replace />;

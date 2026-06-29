@@ -9,6 +9,7 @@ const AdminApplications = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectingApp, setRejectingApp] = useState(null);
+  const [loginStatusMap, setLoginStatusMap] = useState({});
 
   useEffect(() => {
     fetchApps();
@@ -64,6 +65,59 @@ const AdminApplications = () => {
     const merged = [...volunteers, ...members].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at),
     );
+
+    const emails = merged
+      .map((app) => app.email?.trim().toLowerCase())
+      .filter(Boolean);
+
+    const { data: invites } = await supabase
+      .from("signup_invites")
+      .select("email, used, expires_at")
+      .in("email", emails);
+
+    const { data: users } = await supabase
+      .from("users")
+      .select("email, username")
+      .in("email", emails);
+
+    const inviteMap = new Map(
+      (invites || []).map((i) => [i.email?.toLowerCase(), i]),
+    );
+
+    const userMap = new Map(
+      (users || []).map((u) => [u.email?.toLowerCase(), u]),
+    );
+
+    const statusMap = {};
+
+    emails.forEach((email) => {
+      const invite = inviteMap.get(email);
+      const user = userMap.get(email);
+
+      if (user) {
+        statusMap[email] = {
+          label: "Credentials Created",
+          color: "bg-green-100 text-green-700",
+          detail: `Username: ${user.username || "-"}`,
+        };
+      } else if (invite) {
+        statusMap[email] = {
+          label: "Invite Sent, Not Completed",
+          color: "bg-yellow-100 text-yellow-700",
+          detail: invite.expires_at
+            ? `Expires: ${new Date(invite.expires_at).toLocaleDateString()}`
+            : "Invite exists",
+        };
+      } else {
+        statusMap[email] = {
+          label: "No Invite Found",
+          color: "bg-red-100 text-red-700",
+          detail: "Signup invite missing",
+        };
+      }
+    });
+
+    setLoginStatusMap(statusMap);
 
     setApps(merged);
   };
@@ -392,6 +446,18 @@ const AdminApplications = () => {
     }
   };
 
+  const getLoginStatus = (app) => {
+    const email = app.email?.trim().toLowerCase();
+
+    return (
+      loginStatusMap[email] || {
+        label: "Unknown",
+        color: "bg-gray-100 text-gray-600",
+        detail: "-",
+      }
+    );
+  };
+
   const filteredApps = apps.filter((app) => {
     const statusMatch = statusFilter === "all" || app.status === statusFilter;
 
@@ -489,6 +555,27 @@ const AdminApplications = () => {
                   </div>
 
                   <p className="text-sm text-slate-600">{app.email}</p>
+                  {app.status === "approved" && (
+                    <div className="mt-3">
+                      {(() => {
+                        const loginStatus = getLoginStatus(app);
+
+                        return (
+                          <>
+                            <span
+                              className={`inline-block text-xs font-semibold px-2 py-1 rounded-full ${loginStatus.color}`}
+                            >
+                              {loginStatus.label}
+                            </span>
+
+                            <p className="text-xs text-slate-500 mt-1">
+                              {loginStatus.detail}
+                            </p>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
 
                   <div className="mt-2 flex gap-2 flex-wrap">
                     <span
@@ -541,6 +628,25 @@ const AdminApplications = () => {
               </button>
             </div>
 
+            {selected.hear_about_us?.length > 0 && (
+              <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
+                  How did you hear about us?
+                </p>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selected.hear_about_us.map((item) => (
+                    <span
+                      key={item}
+                      className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Object.entries(selected || {})
                 .filter(
@@ -552,6 +658,7 @@ const AdminApplications = () => {
                       "updated_at",
                       "waiver_signature",
                       "waiver_signed_at",
+                      "hear_about_us",
                     ].includes(key),
                 )
                 .map(([key, value]) => {

@@ -74,7 +74,7 @@ export default function EnrollmentTransactions({ user }) {
                     </td>
 
                     <td className="p-4 font-medium">
-                      ${Number(t.total_amount).toFixed(2)}
+                      ${Number(t.amount_received).toFixed(2)}
                     </td>
 
                     <td className="p-4">
