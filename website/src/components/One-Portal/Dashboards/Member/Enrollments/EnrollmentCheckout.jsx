@@ -9,9 +9,12 @@ export default function EnrollmentCheckout({
   hasPaidRegistrationFee = false,
   remainingSlots = 3,
   onBack,
+  onComplete,
 }) {
   const [loading, setLoading] = useState(false);
   const [checkoutStarted, setCheckoutStarted] = useState(false);
+  const [paymentChoice, setPaymentChoice] = useState("pay_now");
+  // const [payLaterSubmitted, setPayLaterSubmitted] = useState(false);
 
   const subtotal = calculateSubtotal(cart, cycle);
   const annualRegistrationFee = getRegistrationFee(cycle);
@@ -63,280 +66,428 @@ export default function EnrollmentCheckout({
       .join(", ");
   };
 
-  async function handleCheckout() {
+  async function createOrReusePendingOrder() {
+    const cartId = cart[0]?.cart_id;
+    const registrationSettingId = cart[0]?.registration_setting_id;
+
+    const { data: existingOrder } = await supabase
+      .from("enrollment_orders")
+      .select("*")
+      .eq("person_id", user.person_id)
+      .eq("cart_id", cartId)
+      .eq("payment_status", "unpaid")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingOrder) return existingOrder;
+
+    const { data, error } = await supabase
+      .from("enrollment_orders")
+      .insert({
+        person_id: user.person_id,
+        cart_id: cartId,
+        registration_setting_id: registrationSettingId,
+        subtotal,
+        registration_fee: registrationFee,
+        total_amount: total,
+        status: "pending",
+        payment_status: "unpaid",
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // async function handlePaymentContinue() {
+  //   if (checkoutStarted) return;
+
+  //   setCheckoutStarted(true);
+  //   setLoading(true);
+
+  //   try {
+  //     const order = await createOrReusePendingOrder();
+
+  //     if (paymentChoice === "pay_later") {
+  //       alert("Order created! Payment Pending!");
+  //       setLoading(false);
+  //       setCheckoutStarted(false);
+  //       return;
+  //     }
+
+  //     await handleCheckout(order);
+  //   } catch (error) {
+  //     console.error(error);
+  //     alert(error.message || "Could not continue payment.");
+  //     setLoading(false);
+  //     setCheckoutStarted(false);
+  //   }
+  // }
+
+  async function handlePaymentContinue() {
     if (checkoutStarted) return;
 
     setCheckoutStarted(true);
-
     setLoading(true);
 
-    if (!user?.person_id) {
-      alert("Could not identify the current member. Please sign in again.");
+    try {
+      const order = await createOrReusePendingOrder();
 
+      // if (paymentChoice === "pay_later") {
+      //   setPayLaterSubmitted(true);
+      //   setLoading(false);
+      //   setCheckoutStarted(false);
+      //   return;
+      // }
+      if (paymentChoice === "pay_later") {
+        onComplete?.("pay_later");
+        setLoading(false);
+        setCheckoutStarted(false);
+        return;
+      }
+
+      await handleCheckout(order);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Could not continue payment.");
       setLoading(false);
       setCheckoutStarted(false);
-
-      return;
     }
+  }
 
-    if (!cart || cart.length === 0) {
-      alert("Your cart is empty.");
+  // async function handleCheckout() {
+  // async function handleCheckout(order) {
+  //   if (checkoutStarted) return;
 
+  //   setCheckoutStarted(true);
+
+  //   setLoading(true);
+
+  //   if (!user?.person_id) {
+  //     alert("Could not identify the current member. Please sign in again.");
+
+  //     setLoading(false);
+  //     setCheckoutStarted(false);
+
+  //     return;
+  //   }
+
+  //   if (!cart || cart.length === 0) {
+  //     alert("Your cart is empty.");
+
+  //     setLoading(false);
+  //     setCheckoutStarted(false);
+
+  //     return;
+  //   }
+
+  //   if (total <= 0) {
+  //     alert("There is no payment due for this checkout.");
+
+  //     setLoading(false);
+  //     setCheckoutStarted(false);
+
+  //     return;
+  //   }
+
+  //   const { data: existingEnrollments, error: enrollmentLookupError } =
+  //     await supabase
+  //       .from("enrollments")
+  //       .select("program_id, programs (academic_year, category)")
+  //       .eq("student_id", user.person_id);
+
+  //   if (enrollmentLookupError) {
+  //     console.error(enrollmentLookupError);
+  //     alert("Could not validate existing enrollments.");
+  //     setLoading(false);
+  //     setCheckoutStarted(false);
+  //     return;
+  //   }
+
+  //   const enrolledProgramIds = new Set(
+  //     (existingEnrollments || []).map((e) => e.program_id),
+  //   );
+
+  //   const duplicatePrograms = cart.filter((item) =>
+  //     enrolledProgramIds.has(item.program_id),
+  //   );
+
+  //   if (duplicatePrograms.length > 0) {
+  //     alert("You are already enrolled in one or more selected programs.");
+
+  //     setLoading(false);
+  //     setCheckoutStarted(false);
+
+  //     return;
+  //   }
+
+  //   // const existingThisCycle = (existingEnrollments || []).filter(
+  //   //   (enrollment) => enrollment.programs?.academic_year === cycle?.year,
+  //   // );
+  //   const existingThisCycle = (existingEnrollments || []).filter(
+  //     (enrollment) =>
+  //       enrollment.programs?.academic_year === cycle?.year &&
+  //       enrollment.programs?.category?.toLowerCase() === "vocational",
+  //   );
+  //   const currentEnrolledCount = Math.max(
+  //     enrolledCount,
+  //     existingThisCycle.length,
+  //   );
+
+  //   const vocationalInCart = cart.filter(
+  //     (item) => item.programs?.category?.toLowerCase() === "vocational",
+  //   ).length;
+
+  //   if (
+  //     currentEnrolledCount + vocationalInCart > 3 ||
+  //     vocationalInCart > remainingSlots
+  //   ) {
+  //     alert(
+  //       "You can only register for a maximum of 3 vocational programs per year.",
+  //     );
+
+  //     setLoading(false);
+  //     setCheckoutStarted(false);
+
+  //     return;
+  //   }
+
+  //   let createdOrder = null;
+  //   let createdNewOrder = false;
+
+  //   try {
+  //     console.log("CHECKOUT CART", cart);
+
+  //     const cartId = cart[0]?.cart_id;
+  //     const registrationSettingId = cart[0]?.registration_setting_id;
+
+  //     if (!cartId || !registrationSettingId) {
+  //       alert("Your cart could not be restored. Please refresh and try again.");
+  //       setLoading(false);
+  //       setCheckoutStarted(false);
+  //       return;
+  //     }
+
+  //     if (cart.some((item) => item.locked)) {
+  //       alert("This cart has already been submitted.");
+  //       setLoading(false);
+  //       setCheckoutStarted(false);
+  //       return;
+  //     }
+
+  //     const uniqueProgramIds = new Set(cart.map((item) => item.program_id));
+
+  //     if (uniqueProgramIds.size !== cart.length) {
+  //       alert(
+  //         "Your cart contains duplicate programs. Please refresh and try again.",
+  //       );
+  //       setLoading(false);
+  //       setCheckoutStarted(false);
+  //       return;
+  //     }
+
+  //     const subtotal = calculateSubtotal(cart, cycle);
+
+  //     // CREATE ORDER FIRST
+
+  //     const { data: existingOrder, error: existingOrderError } = await supabase
+  //       .from("enrollment_orders")
+  //       .select("*")
+  //       .eq("person_id", user.person_id)
+  //       .eq("cart_id", cartId)
+  //       .eq("payment_status", "unpaid")
+  //       .order("created_at", {
+  //         ascending: false,
+  //       })
+  //       .limit(1)
+  //       .maybeSingle();
+
+  //     if (existingOrderError) {
+  //       console.error(existingOrderError);
+  //       alert("Could not restore existing order");
+  //       setLoading(false);
+  //       setCheckoutStarted(false);
+  //       return;
+  //     }
+
+  //     let order;
+  //     let orderError;
+
+  //     if (existingOrder) {
+  //       order = existingOrder;
+  //     } else {
+  //       const result = await supabase
+  //         .from("enrollment_orders")
+  //         .insert({
+  //           person_id: user.person_id,
+  //           cart_id: cartId,
+  //           registration_setting_id: registrationSettingId,
+  //           subtotal,
+  //           registration_fee: registrationFee,
+  //           total_amount: total,
+  //           status: "pending",
+  //           payment_status: "unpaid",
+  //         })
+  //         .select()
+  //         .single();
+
+  //       order = result.data;
+  //       createdNewOrder = Boolean(result.data?.id);
+  //       orderError = result.error;
+  //     }
+
+  //     createdOrder = order;
+
+  //     if (orderError) {
+  //       console.error(orderError);
+
+  //       alert("Could not create order");
+
+  //       setLoading(false);
+  //       setCheckoutStarted(false);
+
+  //       return;
+  //     }
+
+  //     const response = await fetch("/api/create-checkout-session", {
+  //       method: "POST",
+
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+
+  //       body: JSON.stringify({
+  //         cart,
+
+  //         orderId: order.id,
+
+  //         personId: user.person_id,
+
+  //         cartId,
+  //       }),
+  //     });
+
+  //     console.log("RESPONSE STATUS", response.status);
+
+  //     const data = await response.json();
+
+  //     console.log("CHECKOUT RESPONSE", data);
+
+  //     if (!response.ok) {
+  //       if (createdNewOrder && createdOrder?.id) {
+  //         await supabase
+  //           .from("enrollment_orders")
+  //           .delete()
+  //           .eq("id", createdOrder.id)
+  //           .eq("payment_status", "unpaid")
+  //           .is("stripe_session_id", null);
+  //       }
+
+  //       alert(data.error || "Checkout failed");
+
+  //       setLoading(false);
+  //       setCheckoutStarted(false);
+
+  //       return;
+  //     }
+
+  //     if (data.url) {
+  //       localStorage.setItem("iw_user", JSON.stringify(user));
+  //       sessionStorage.setItem("iw_checkout_user", JSON.stringify(user));
+  //       window.location.href = data.url;
+  //     } else {
+  //       if (createdNewOrder && createdOrder?.id) {
+  //         await supabase
+  //           .from("enrollment_orders")
+  //           .delete()
+  //           .eq("id", createdOrder.id)
+  //           .eq("payment_status", "unpaid")
+  //           .is("stripe_session_id", null);
+  //       }
+
+  //       alert("Stripe URL not returned");
+
+  //       setLoading(false);
+  //       setCheckoutStarted(false);
+
+  //       return;
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+
+  //     if (createdNewOrder && createdOrder?.id) {
+  //       await supabase
+  //         .from("enrollment_orders")
+  //         .delete()
+  //         .eq("id", createdOrder.id)
+  //         .eq("payment_status", "unpaid")
+  //         .is("stripe_session_id", null);
+  //     }
+
+  //     alert("Something went wrong");
+  //     setCheckoutStarted(false);
+  //   }
+
+  //   setLoading(false);
+  // }
+
+  async function handleCheckout(order) {
+    if (!order?.id) {
+      alert("Could not find the order. Please try again.");
       setLoading(false);
       setCheckoutStarted(false);
-
       return;
     }
-
-    if (total <= 0) {
-      alert("There is no payment due for this checkout.");
-
-      setLoading(false);
-      setCheckoutStarted(false);
-
-      return;
-    }
-
-    const { data: existingEnrollments, error: enrollmentLookupError } =
-      await supabase
-        .from("enrollments")
-        .select("program_id, programs (academic_year, category)")
-        .eq("student_id", user.person_id);
-
-    if (enrollmentLookupError) {
-      console.error(enrollmentLookupError);
-      alert("Could not validate existing enrollments.");
-      setLoading(false);
-      setCheckoutStarted(false);
-      return;
-    }
-
-    const enrolledProgramIds = new Set(
-      (existingEnrollments || []).map((e) => e.program_id),
-    );
-
-    const duplicatePrograms = cart.filter((item) =>
-      enrolledProgramIds.has(item.program_id),
-    );
-
-    if (duplicatePrograms.length > 0) {
-      alert("You are already enrolled in one or more selected programs.");
-
-      setLoading(false);
-      setCheckoutStarted(false);
-
-      return;
-    }
-
-    // const existingThisCycle = (existingEnrollments || []).filter(
-    //   (enrollment) => enrollment.programs?.academic_year === cycle?.year,
-    // );
-    const existingThisCycle = (existingEnrollments || []).filter(
-      (enrollment) =>
-        enrollment.programs?.academic_year === cycle?.year &&
-        enrollment.programs?.category?.toLowerCase() === "vocational",
-    );
-    const currentEnrolledCount = Math.max(
-      enrolledCount,
-      existingThisCycle.length,
-    );
-
-    const vocationalInCart = cart.filter(
-      (item) => item.programs?.category?.toLowerCase() === "vocational",
-    ).length;
-
-    if (
-      currentEnrolledCount + vocationalInCart > 3 ||
-      vocationalInCart > remainingSlots
-    ) {
-      alert(
-        "You can only register for a maximum of 3 vocational programs per year.",
-      );
-
-      setLoading(false);
-      setCheckoutStarted(false);
-
-      return;
-    }
-
-    let createdOrder = null;
-    let createdNewOrder = false;
 
     try {
-      console.log("CHECKOUT CART", cart);
-
       const cartId = cart[0]?.cart_id;
-      const registrationSettingId = cart[0]?.registration_setting_id;
-
-      if (!cartId || !registrationSettingId) {
-        alert("Your cart could not be restored. Please refresh and try again.");
-        setLoading(false);
-        setCheckoutStarted(false);
-        return;
-      }
-
-      if (cart.some((item) => item.locked)) {
-        alert("This cart has already been submitted.");
-        setLoading(false);
-        setCheckoutStarted(false);
-        return;
-      }
-
-      const uniqueProgramIds = new Set(cart.map((item) => item.program_id));
-
-      if (uniqueProgramIds.size !== cart.length) {
-        alert(
-          "Your cart contains duplicate programs. Please refresh and try again.",
-        );
-        setLoading(false);
-        setCheckoutStarted(false);
-        return;
-      }
-
-      const subtotal = calculateSubtotal(cart, cycle);
-
-      // CREATE ORDER FIRST
-
-      const { data: existingOrder, error: existingOrderError } = await supabase
-        .from("enrollment_orders")
-        .select("*")
-        .eq("person_id", user.person_id)
-        .eq("cart_id", cartId)
-        .eq("payment_status", "unpaid")
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(1)
-        .maybeSingle();
-
-      if (existingOrderError) {
-        console.error(existingOrderError);
-        alert("Could not restore existing order");
-        setLoading(false);
-        setCheckoutStarted(false);
-        return;
-      }
-
-      let order;
-      let orderError;
-
-      if (existingOrder) {
-        order = existingOrder;
-      } else {
-        const result = await supabase
-          .from("enrollment_orders")
-          .insert({
-            person_id: user.person_id,
-            cart_id: cartId,
-            registration_setting_id: registrationSettingId,
-            subtotal,
-            registration_fee: registrationFee,
-            total_amount: total,
-            status: "pending",
-            payment_status: "unpaid",
-          })
-          .select()
-          .single();
-
-        order = result.data;
-        createdNewOrder = Boolean(result.data?.id);
-        orderError = result.error;
-      }
-
-      createdOrder = order;
-
-      if (orderError) {
-        console.error(orderError);
-
-        alert("Could not create order");
-
-        setLoading(false);
-        setCheckoutStarted(false);
-
-        return;
-      }
 
       const response = await fetch("/api/create-checkout-session", {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           cart,
-
           orderId: order.id,
-
           personId: user.person_id,
-
           cartId,
         }),
       });
 
-      console.log("RESPONSE STATUS", response.status);
-
       const data = await response.json();
 
-      console.log("CHECKOUT RESPONSE", data);
-
       if (!response.ok) {
-        if (createdNewOrder && createdOrder?.id) {
-          await supabase
-            .from("enrollment_orders")
-            .delete()
-            .eq("id", createdOrder.id)
-            .eq("payment_status", "unpaid")
-            .is("stripe_session_id", null);
-        }
-
         alert(data.error || "Checkout failed");
-
         setLoading(false);
         setCheckoutStarted(false);
-
         return;
       }
 
-      if (data.url) {
-        localStorage.setItem("iw_user", JSON.stringify(user));
-        sessionStorage.setItem("iw_checkout_user", JSON.stringify(user));
-        window.location.href = data.url;
-      } else {
-        if (createdNewOrder && createdOrder?.id) {
-          await supabase
-            .from("enrollment_orders")
-            .delete()
-            .eq("id", createdOrder.id)
-            .eq("payment_status", "unpaid")
-            .is("stripe_session_id", null);
-        }
-
+      if (!data.url) {
         alert("Stripe URL not returned");
-
         setLoading(false);
         setCheckoutStarted(false);
-
         return;
       }
+
+      localStorage.setItem("iw_user", JSON.stringify(user));
+      sessionStorage.setItem("iw_checkout_user", JSON.stringify(user));
+      window.location.href = data.url;
     } catch (err) {
       console.error(err);
-
-      if (createdNewOrder && createdOrder?.id) {
-        await supabase
-          .from("enrollment_orders")
-          .delete()
-          .eq("id", createdOrder.id)
-          .eq("payment_status", "unpaid")
-          .is("stripe_session_id", null);
-      }
-
       alert("Something went wrong");
+      setLoading(false);
       setCheckoutStarted(false);
     }
-
-    setLoading(false);
   }
+
+  // if (paymentChoice === "pay_later") {
+  //   onComplete("pay_later");
+  //   return;
+  // }
 
   return (
     <div className="grid lg:grid-cols-2 gap-8">
@@ -458,13 +609,48 @@ export default function EnrollmentCheckout({
           </div>
         </div>
 
+        <div className="mt-8 space-y-3">
+          <p className="font-semibold">Payment Option</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setPaymentChoice("pay_now")}
+              className={`border rounded-2xl p-4 ${
+                paymentChoice === "pay_now"
+                  ? "border-[#0f5b54] bg-[#eef8f7]"
+                  : "border-gray-300"
+              }`}
+            >
+              Pay Now
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPaymentChoice("pay_later")}
+              className={`border rounded-2xl p-4 ${
+                paymentChoice === "pay_later"
+                  ? "border-[#0f5b54] bg-[#eef8f7]"
+                  : "border-gray-300"
+              }`}
+            >
+              Pay Later
+            </button>
+          </div>
+          <p className="text-red-500 text-sm">
+            {paymentChoice === "pay_now"
+              ? "Clicking the button below will redirect you to the secure Stripe Checkout page to complete your payment."
+              : "Your registration will be submitted with a pending payment status. An Inclusive World administrator will contact you to complete your payment."}
+          </p>
+        </div>
+
         <div className="flex gap-4 mt-8">
           <button onClick={onBack} className="flex-1 border rounded-2xl py-4">
             Back
           </button>
 
           <button
-            onClick={handleCheckout}
+            onClick={handlePaymentContinue}
             disabled={
               loading || checkoutStarted || cart.length === 0 || total <= 0
             }
@@ -479,7 +665,13 @@ export default function EnrollmentCheckout({
               disabled:cursor-not-allowed
             "
           >
-            {loading ? "Redirecting..." : "Proceed to Payment"}
+            {loading
+              ? paymentChoice === "pay_now"
+                ? "Redirecting..."
+                : "Submitting..."
+              : paymentChoice === "pay_now"
+                ? "Proceed to Payment"
+                : "Submit Payment Later"}
           </button>
         </div>
       </div>
