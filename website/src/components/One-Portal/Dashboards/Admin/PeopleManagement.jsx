@@ -1384,46 +1384,46 @@ const PeopleManagement = () => {
                     )}
                   </Section>
                   <Section title="Member Enrollment Preferences">
-                    {selectedPerson.enrollments?.length > 0 ? (
-                      <div className="space-y-3">
-                        {selectedPerson.enrollments.map((enrollment, index) => (
-                          <div
-                            key={enrollment.id}
-                            className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border"
-                          >
-                            <div>
-                              <p className="font-semibold">
-                                {enrollment.programs?.course_title}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {enrollment.programs?.course_code}
-                              </p>
-                            </div>
+                    {selectedPerson.memberApplication?.selected_programs
+                      ?.length > 0 ? (
+                      selectedPerson.memberApplication.selected_programs.map(
+                        (programName, index) => {
+                          const program = programs.find(
+                            (p) =>
+                              p.course_title?.trim().toLowerCase() ===
+                              programName?.trim().toLowerCase(),
+                          );
 
-                            {/* <button
-                              onClick={() =>
-                                assignProgramToPerson(enrollment.program_id)
-                              }
-                              className="bg-teal-700 text-white px-3 py-1 rounded text-xs"
+                          return (
+                            <div
+                              key={programName}
+                              className="flex justify-between mb-3 items-center bg-gray-50 p-3 rounded-lg border"
                             >
-                              Assign Choice #{index + 1}
-                            </button> */}
-                            <button
-                              disabled={
-                                !["paid", "override"].includes(
-                                  getPaymentStatus(selectedPerson),
-                                )
-                              }
-                              onClick={() =>
-                                assignProgramToPerson(enrollment.program_id)
-                              }
-                              className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Assign Choice #{index + 1}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                              <div>
+                                <p className="font-semibold">{programName}</p>
+                                <p className="text-xs text-gray-500">
+                                  {program?.course_code || "Program not found"}
+                                </p>
+                              </div>
+
+                              <button
+                                disabled={
+                                  !program ||
+                                  !["paid", "override"].includes(
+                                    getPaymentStatus(selectedPerson),
+                                  )
+                                }
+                                onClick={() =>
+                                  assignProgramToPerson(program.id)
+                                }
+                                className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Assign Choice #{index + 1}
+                              </button>
+                            </div>
+                          );
+                        },
+                      )
                     ) : (
                       <p className="text-xs text-red-600">
                         This member has not completed payment and submitted
