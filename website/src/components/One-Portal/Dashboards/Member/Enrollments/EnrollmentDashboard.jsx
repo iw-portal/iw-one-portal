@@ -198,6 +198,7 @@ export default function EnrollmentDashboard({ user }) {
   async function fetchCycles() {
     const activeUser = getCurrentUser();
     const today = new Date().toISOString().split("T")[0];
+    const appEnv = import.meta.env.VITE_APP_ENV || "production";
 
     const { data, error } = await supabase
       .from("registration_settings")
@@ -206,6 +207,7 @@ export default function EnrollmentDashboard({ user }) {
       .eq("is_open", true)
       .lte("start_date", today)
       .gte("end_date", today)
+      .eq("environment", appEnv)
       .order("created_at", {
         ascending: false,
       });
