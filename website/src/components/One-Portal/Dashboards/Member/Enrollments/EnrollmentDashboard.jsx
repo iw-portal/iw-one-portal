@@ -33,6 +33,7 @@ export default function EnrollmentDashboard({ user }) {
 
   const [step, setStep] = useState("programs");
   const [highestStep, setHighestStep] = useState("programs");
+  const [paymentType, setPaymentType] = useState(null);
 
   const currentStepIndex = STEPS.indexOf(step);
 
@@ -49,7 +50,7 @@ export default function EnrollmentDashboard({ user }) {
   const [initialized, setInitialized] = useState(false);
   const [activeCartId, setActiveCartId] = useState(null);
   const [paymentVerified, setPaymentVerified] = useState(false);
-  const [, setRegistrationComplete] = useState(false);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
   const [enrolledClasses, setEnrolledClasses] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [finalizingPayment, setFinalizingPayment] = useState(false);
@@ -605,44 +606,93 @@ export default function EnrollmentDashboard({ user }) {
           hasPaidRegistrationFee={hasPaidRegistrationFee}
           remainingSlots={remainingSlots}
           onBack={() => updateStep("profile")}
+          onComplete={(paymentType) => {
+            updateStep("complete");
+            setPaymentType(paymentType);
+          }}
         />
       );
     }
 
     if (step === "complete") {
-      return renderEnrollmentComplete(true);
+      console.log(paymentType);
+      return renderEnrollmentComplete(paymentType);
     }
 
     return null;
   }
 
-  function renderEnrollmentComplete(showSuccess = false) {
+  // function renderEnrollmentComplete(showSuccess = false) {
+  //   return (
+  //     <div className="bg-white rounded-3xl p-12 shadow-sm border text-center">
+  //       <h1 className="text-5xl font-bold text-[#0f5b54]">
+  //         Enrollment Complete
+  //       </h1>
+
+  //       <p className="mt-5 text-gray-600 max-w-2xl mx-auto leading-relaxed">
+  //         {showSuccess
+  //           ? "Your payment was successful and your enrollment has been confirmed."
+  //           : "You are enrolled in the maximum 3 classes for this cycle."}
+  //       </p>
+
+  //       <div className="mt-8 bg-[#eef8f7] rounded-2xl p-6 inline-block">
+  //         <p className="font-medium text-[#0f5b54]">
+  //           You are officially enrolled in your selected Inclusive World
+  //           programs.
+  //         </p>
+  //       </div>
+
+  //       <div className="flex flex-wrap justify-center gap-4 mt-8">
+  //         <a
+  //           href="/one-portal/member/classes"
+  //           className="px-5 py-3 rounded-2xl bg-[#0f5b54] text-white font-medium"
+  //         >
+  //           View My Classes
+  //         </a>
+
+  //         <a
+  //           href="/one-portal/member/transactions"
+  //           className="px-5 py-3 rounded-2xl border border-gray-300 text-gray-700 font-medium"
+  //         >
+  //           View Transactions
+  //         </a>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  function renderEnrollmentComplete(paymentType) {
+    const isPayNow = paymentType === "pay_now";
+
     return (
       <div className="bg-white rounded-3xl p-12 shadow-sm border text-center">
         <h1 className="text-5xl font-bold text-[#0f5b54]">
-          Enrollment Complete
+          {isPayNow ? "Enrollment Complete" : "Registration Submitted"}
         </h1>
 
         <p className="mt-5 text-gray-600 max-w-2xl mx-auto leading-relaxed">
-          {showSuccess
+          {isPayNow
             ? "Your payment was successful and your enrollment has been confirmed."
-            : "You are enrolled in the maximum 3 classes for this cycle."}
+            : "Your enrollment has been submitted successfully with a pending payment status. An Inclusive World administrator will contact you to complete your payment."}
         </p>
 
-        <div className="mt-8 bg-[#eef8f7] rounded-2xl p-6 inline-block">
+        <div className="mt-8 bg-[#eef8f7] rounded-2xl p-6 inline-block max-w-2xl">
           <p className="font-medium text-[#0f5b54]">
-            You are officially enrolled in your selected Inclusive World
-            programs.
+            {isPayNow
+              ? "You are officially enrolled in your selected Inclusive World programs. You can now view your enrolled classes and payment history below."
+              : "Your selected programs have been saved. Once your payment has been received and verified by an administrator, your enrollment will be finalized and your classes will appear in your dashboard."}
           </p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-4 mt-8">
-          <a
-            href="/one-portal/member/classes"
-            className="px-5 py-3 rounded-2xl bg-[#0f5b54] text-white font-medium"
-          >
-            View My Classes
-          </a>
+          {isPayNow && (
+            <a
+              href="/one-portal/member/classes"
+              className="px-5 py-3 rounded-2xl bg-[#0f5b54] text-white font-medium"
+            >
+              View My Classes
+            </a>
+          )}
 
           <a
             href="/one-portal/member/transactions"

@@ -127,6 +127,8 @@ const PeopleManagement = () => {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
   const [paymentModalPerson, setPaymentModalPerson] = useState(null);
+  const [selectedPersonHasPendingCart, setSelectedPersonHasPendingCart] =
+    useState(false);
   const [manualPaymentForm, setManualPaymentForm] = useState({
     payment_method: "",
     amount_received: "",
@@ -169,6 +171,30 @@ const PeopleManagement = () => {
     }
 
     setEnrollmentCarts(data || []);
+  };
+
+  const checkPendingCartForPerson = async (personId) => {
+    if (!personId) {
+      setSelectedPersonHasPendingCart(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("enrollment_orders")
+      .select("id, cart_id, payment_status, status")
+      .eq("person_id", personId)
+      .eq("payment_status", "unpaid")
+      .not("cart_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error("Pending cart check failed:", error);
+      setSelectedPersonHasPendingCart(false);
+      return;
+    }
+
+    setSelectedPersonHasPendingCart((data || []).length > 0);
   };
 
   const fetchAllData = async () => {
@@ -240,6 +266,7 @@ const PeopleManagement = () => {
   ),
   enrollment_orders (
     id,
+    cart_id,
     payment_status,
     status,
     total_amount,
@@ -627,6 +654,7 @@ const PeopleManagement = () => {
       ),
       enrollment_orders (
         id,
+        cart_id,
         payment_status,
         status,
         total_amount,
@@ -648,7 +676,7 @@ const PeopleManagement = () => {
           course_title,
           course_code
         )
-      ),
+      )
     `,
       )
       .eq("id", personId)
@@ -703,6 +731,43 @@ const PeopleManagement = () => {
     person?.volunteerApplication?.interest_form_completed === true ||
     person?.volunteerApplication?.interest_form_completed === "true";
 
+  // const markMemberAsOverride = async (person) => {
+  //   if (!canOverridePayments) {
+  //     alert("You do not have permission to override payments.");
+  //     return;
+  //   }
+
+  //   const latestOrder = getLatestOrder(person);
+
+  //   if (!latestOrder) {
+  //     alert("No enrollment order found for this member.");
+  //     return;
+  //   }
+
+  //   const reason = window.prompt("Enter override reason:");
+  //   if (!reason?.trim()) return;
+
+  //   const { error } = await supabase
+  //     .from("enrollment_orders")
+  //     .update({
+  //       payment_status: "override",
+  //       override_reason: reason.trim(),
+  //       overridden_by: currentUser.id,
+  //       overridden_at: new Date().toISOString(),
+  //       updated_at: new Date().toISOString(),
+  //     })
+  //     .eq("id", latestOrder.id);
+
+  //   if (error) {
+  //     alert(error.message);
+  //     return;
+  //   }
+
+  //   await refreshSelectedPerson(person.id);
+
+  //   alert("Member marked as override.");
+  // };
+
   const markMemberAsOverride = async (person) => {
     if (!canOverridePayments) {
       alert("You do not have permission to override payments.");
@@ -711,15 +776,31 @@ const PeopleManagement = () => {
 
     const latestOrder = getLatestOrder(person);
 
-    if (!latestOrder) {
-      alert("No enrollment order found for this member.");
+    if (!latestOrder?.id || !latestOrder?.cart_id) {
+      alert("No pending enrollment order/cart found for this member.");
       return;
     }
 
     const reason = window.prompt("Enter override reason:");
     if (!reason?.trim()) return;
 
-    const { error } = await supabase
+    const { data: cartItems, error: cartError } = await supabase
+      .from("enrollment_cart_items")
+      .select("program_id")
+      .eq("cart_id", latestOrder.cart_id)
+      .eq("person_id", person.id);
+
+    if (cartError) {
+      alert(cartError.message);
+      return;
+    }
+
+    if (!cartItems?.length) {
+      alert("No selected programs found in this member's cart.");
+      return;
+    }
+
+    const { error: orderError } = await supabase
       .from("enrollment_orders")
       .update({
         payment_status: "override",
@@ -730,14 +811,34 @@ const PeopleManagement = () => {
       })
       .eq("id", latestOrder.id);
 
-    if (error) {
-      alert(error.message);
+    if (orderError) {
+      alert(orderError.message);
+      return;
+    }
+
+    const enrollmentRows = cartItems.map((item) => ({
+      student_id: person.id,
+      program_id: item.program_id,
+      order_id: latestOrder.id,
+      enrollment_status: "preferred",
+    }));
+
+    const { error: enrollmentError } = await supabase
+      .from("enrollments")
+      .upsert(enrollmentRows, {
+        onConflict: "student_id,program_id",
+        ignoreDuplicates: true,
+      });
+
+    if (enrollmentError) {
+      alert(enrollmentError.message);
       return;
     }
 
     await refreshSelectedPerson(person.id);
+    await fetchPeople();
 
-    alert("Member marked as override.");
+    alert("Member marked as override and enrollment preferences were created.");
   };
 
   const markOverrideAsPaid = async () => {
@@ -779,6 +880,20 @@ const PeopleManagement = () => {
     if (error) {
       alert(error.message);
       return;
+    }
+
+    if (latestOrder.cart_id) {
+      await supabase
+        .from("enrollment_carts")
+        .update({
+          status: "completed",
+          payment_status: "paid",
+          current_step: "complete",
+          highest_step: "complete",
+          finalized_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", latestOrder.cart_id);
     }
 
     const personId = paymentModalPerson.id;
@@ -995,9 +1110,17 @@ const PeopleManagement = () => {
     await fetchPrograms();
   };
 
+  // const openProfile = (person) => {
+  //   setSelectedPerson(getPersonDetails(person));
+  //   setSelectedProgramId("");
+  // };
   const openProfile = (person) => {
-    setSelectedPerson(getPersonDetails(person));
+    const details = getPersonDetails(person);
+
+    setSelectedPerson(details);
     setSelectedProgramId("");
+
+    checkPendingCartForPerson(person.id);
   };
 
   const currentLeadPrograms = selectedPerson
@@ -1020,6 +1143,11 @@ const PeopleManagement = () => {
       (assignment) => String(assignment.program_id) === String(program.id),
     );
   });
+
+  const hasPendingCart =
+    selectedPerson?.enrollment_orders?.some(
+      (order) => order.payment_status === "unpaid" && order.cart_id,
+    ) || false;
 
   return (
     <div className="p-4 sm:p-6 w-full">
@@ -1383,53 +1511,157 @@ const PeopleManagement = () => {
                       </p>
                     )}
                   </Section>
-                  <Section title="Member Enrollment Preferences">
-                    {selectedPerson.memberApplication?.selected_programs
-                      ?.length > 0 ? (
-                      selectedPerson.memberApplication.selected_programs.map(
-                        (programName, index) => {
-                          const program = programs.find(
-                            (p) =>
-                              p.course_title?.trim().toLowerCase() ===
-                              programName?.trim().toLowerCase(),
-                          );
+                  {/* <Section title="Member Enrollment Preferences">
+                    {selectedPerson.enrollments?.length > 0 ? (
+                      selectedPerson.enrollments.map((enrollment, index) => {
+                        const program = programs.find(
+                          (p) =>
+                            p.course_title?.trim().toLowerCase() ===
+                            programName?.trim().toLowerCase(),
+                        );
 
-                          return (
-                            <div
-                              key={programName}
-                              className="flex justify-between mb-3 items-center bg-gray-50 p-3 rounded-lg border"
-                            >
-                              <div>
-                                <p className="font-semibold">{programName}</p>
-                                <p className="text-xs text-gray-500">
-                                  {program?.course_code || "Program not found"}
-                                </p>
-                              </div>
-
-                              <button
-                                disabled={
-                                  !program ||
-                                  !["paid", "override"].includes(
-                                    getPaymentStatus(selectedPerson),
-                                  )
-                                }
-                                onClick={() =>
-                                  assignProgramToPerson(program.id)
-                                }
-                                className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Assign Choice #{index + 1}
-                              </button>
+                        return (
+                          <div
+                            key={programName}
+                            className="flex justify-between mb-3 items-center bg-gray-50 p-3 rounded-lg border"
+                          >
+                            <div>
+                              <p className="font-semibold">{programName}</p>
+                              <p className="text-xs text-gray-500">
+                                {program?.course_code || "Program not found"}
+                              </p>
                             </div>
-                          );
-                        },
-                      )
+
+                            <button
+                              disabled={
+                                !program ||
+                                !["paid", "override"].includes(
+                                  getPaymentStatus(selectedPerson),
+                                )
+                              }
+                              onClick={() => assignProgramToPerson(program.id)}
+                              className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Assign Choice #{index + 1}
+                            </button>
+                          </div>
+                        );
+                      })
                     ) : (
                       <p className="text-xs text-red-600">
                         This member has not completed payment and submitted
                         enrollment preferences yet. Please ask them to complete
                         enrollment before assigning a program.
                       </p>
+                    )}
+                  </Section> */}
+                  {/* <Section title="Member Enrollment Preferences">
+                    {selectedPerson.enrollments?.length > 0 ? (
+                      selectedPerson.enrollments.map((enrollment, index) => {
+                        const program = enrollment.programs;
+
+                        return (
+                          <div
+                            key={enrollment.id}
+                            className="flex justify-between mb-3 items-center bg-gray-50 p-3 rounded-lg border"
+                          >
+                            <div>
+                              <p className="font-semibold">
+                                {program?.course_title || "Unknown Program"}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {program?.course_code || "Program not found"}
+                              </p>
+                            </div>
+
+                            <button
+                              disabled={
+                                !program?.id ||
+                                !["paid", "override"].includes(
+                                  getPaymentStatus(selectedPerson),
+                                )
+                              }
+                              onClick={() => assignProgramToPerson(program.id)}
+                              className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Assign Choice #{index + 1}
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      // <p className="text-xs text-red-600">
+                      //   This member has not completed payment and submitted
+                      //   enrollment preferences yet. Please ask them to complete
+                      //   enrollment before assigning a program.
+                      // </p>
+                      <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        This member has selected programs but has not completed
+                        payment yet, so their program selections cannot be
+                        viewed here. If you need to review or assign these
+                        selected programs before payment is received, mark the
+                        payment status as{" "}
+                        <span className="font-semibold">Override</span>. Their
+                        selected programs will then appear here for assignment.
+                      </p>
+                    )}
+                  </Section> */}
+                  <Section title="Member Enrollment Preferences">
+                    {selectedPerson.enrollments?.length > 0 ? (
+                      selectedPerson.enrollments.map((enrollment, index) => {
+                        const program = enrollment.programs;
+
+                        return (
+                          <div
+                            key={enrollment.id}
+                            className="flex justify-between mb-3 items-center bg-gray-50 p-3 rounded-lg border"
+                          >
+                            <div>
+                              <p className="font-semibold">
+                                {program?.course_title || "Unknown Program"}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {program?.course_code || "Program not found"}
+                              </p>
+                            </div>
+
+                            <button
+                              disabled={
+                                !program?.id ||
+                                !["paid", "override"].includes(
+                                  getPaymentStatus(selectedPerson),
+                                )
+                              }
+                              onClick={() => assignProgramToPerson(program.id)}
+                              className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Assign Choice #{index + 1}
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : selectedPersonHasPendingCart ? (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <p className="text-sm text-amber-800 font-medium">
+                          This member has already selected their programs, but
+                          payment is still pending.
+                        </p>
+
+                        <p className="text-sm text-amber-700 mt-2">
+                          To review and assign the selected programs before
+                          payment is received, mark the payment status as{" "}
+                          <strong>Override</strong>. Once marked as Override,
+                          the selected programs will appear here for assignment.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <p className="text-sm text-red-700">
+                          This member has not submitted any enrollment
+                          preferences yet. Please ask them to complete
+                          enrollment before assigning programs.
+                        </p>
+                      </div>
                     )}
                   </Section>
                   <Section title="Member Additional Program Requests">

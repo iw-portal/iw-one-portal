@@ -68,6 +68,7 @@ const MemberProfile = ({ user }) => {
   const [availablePrograms, setAvailablePrograms] = useState([]);
   const [selectedPrograms, setSelectedPrograms] = useState([]);
   const [username, setUsername] = useState("");
+  const [pendingPrograms, setPendingPrograms] = useState([]);
 
   useEffect(() => {
     if (!user?.person_id) return;
@@ -79,6 +80,7 @@ const MemberProfile = ({ user }) => {
     fetchOrders();
     fetchPrograms();
     fetchAvailablePrograms();
+    fetchPendingPrograms();
   }, [user?.person_id]);
 
   /* ---------------- FETCH PROFILE ---------------- */
@@ -233,6 +235,45 @@ const MemberProfile = ({ user }) => {
     }
 
     setAvailablePrograms(data || []);
+  };
+
+  const fetchPendingPrograms = async () => {
+    const { data: pendingOrder, error: orderError } = await supabase
+      .from("enrollment_orders")
+      .select("id, cart_id, payment_status, status")
+      .eq("person_id", user.person_id)
+      .in("payment_status", ["unpaid", "override"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (orderError) {
+      console.error(orderError);
+      return;
+    }
+
+    if (!pendingOrder?.cart_id) {
+      setPendingPrograms([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("enrollment_cart_items")
+      .select(
+        `
+      *,
+      programs (*)
+    `,
+      )
+      .eq("cart_id", pendingOrder.cart_id)
+      .eq("person_id", user.person_id);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setPendingPrograms(data || []);
   };
 
   useEffect(() => {
@@ -584,6 +625,32 @@ const MemberProfile = ({ user }) => {
     (o) => o.payment_status === "paid" && o.status === "completed",
   );
 
+  const displayPreferredPrograms =
+    enrollments.length > 0
+      ? enrollments
+      : pendingPrograms.map((item) => ({
+          id: item.id,
+          program_id: item.program_id,
+          programs: item.programs,
+          enrollment_status: "pending_payment",
+        }));
+
+  const vocationalDisplayPrograms = displayPreferredPrograms.filter(
+    (e) => e.programs?.category?.toLowerCase() === "vocational",
+  );
+
+  const nonVocationalDisplayPrograms = displayPreferredPrograms.filter(
+    (e) => e.programs?.category?.toLowerCase() !== "vocational",
+  );
+
+  const hasPendingPaymentPrograms = displayPreferredPrograms.some(
+    (e) => e.enrollment_status === "pending_payment",
+  );
+
+  const programSectionLabel = hasPendingPaymentPrograms
+    ? "Selected"
+    : "Preferred";
+
   /* ---------------- RENDER ---------------- */
   return (
     <div className="p-6 space-y-6">
@@ -767,7 +834,7 @@ const MemberProfile = ({ user }) => {
           </Section>
 
           <div className="mb-4 text-sm text-gray-600">
-            Vocational Selected: {vocationalCount}/3
+            Vocational Selected: {vocationalDisplayPrograms.length}/3
           </div>
 
           {editingPrograms && (
@@ -819,32 +886,58 @@ const MemberProfile = ({ user }) => {
             </Section>
           )}
 
-          <Section title="Preferred Vocational Programs">
-            {vocationalEnrollments.length === 0 ? (
+          {/* <Section title="Preferred Vocational Programs"> */}
+          <Section title={`${programSectionLabel} Vocational Programs`}>
+            {vocationalDisplayPrograms.length === 0 ? (
               <p>No preferred programs found.</p>
             ) : (
-              vocationalEnrollments.map((e) => (
-                <div key={e.id} className="border rounded-lg p-4">
-                  <h4 className="font-semibold">{e.programs?.course_title}</h4>
+              vocationalDisplayPrograms.map((e) => (
+                <div
+                  key={e.id}
+                  className="border rounded-lg p-4 flex justify-between items-center"
+                >
+                  <div>
+                    <h4 className="font-semibold">
+                      {e.programs?.course_title}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      {e.programs?.course_code}
+                    </p>
+                  </div>
 
-                  <p className="text-sm text-gray-500">
-                    {e.programs?.course_code}
-                  </p>
+                  {e.enrollment_status === "pending_payment" && (
+                    <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">
+                      Pending Payment
+                    </span>
+                  )}
                 </div>
               ))
             )}
           </Section>
-          <Section title="Preferred Non-Vocational Programs">
-            {nonVocationalEnrollments.length === 0 ? (
+          {/* <Section title="Preferred Non-Vocational Programs"> */}
+          <Section title={`${programSectionLabel} Non-Vocational Programs`}>
+            {nonVocationalDisplayPrograms.length === 0 ? (
               <p>No preferred programs found.</p>
             ) : (
-              nonVocationalEnrollments.map((e) => (
-                <div key={e.id} className="border rounded-lg p-4">
-                  <h4 className="font-semibold">{e.programs?.course_title}</h4>
+              nonVocationalDisplayPrograms.map((e) => (
+                <div
+                  key={e.id}
+                  className="border rounded-lg p-4 flex justify-between items-center"
+                >
+                  <div>
+                    <h4 className="font-semibold">
+                      {e.programs?.course_title}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      {e.programs?.course_code}
+                    </p>
+                  </div>
 
-                  <p className="text-sm text-gray-500">
-                    {e.programs?.course_code}
-                  </p>
+                  {e.enrollment_status === "pending_payment" && (
+                    <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">
+                      Pending Payment
+                    </span>
+                  )}
                 </div>
               ))
             )}
