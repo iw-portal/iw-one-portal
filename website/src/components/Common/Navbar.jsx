@@ -199,12 +199,12 @@ const Navbar = () => {
 
                 {/* Buttons */}
                 <div className="pt-6 flex flex-col gap-4">
-                  {/* <Link
-                    to="/one-portal/login"
+                  <Link
+                    to="/donate"
                     className="bg-[#e16a5b] text-white py-3 rounded text-center"
                   >
                     Donate
-                  </Link> */}
+                  </Link>
                   <a
                     href="https://shop-inclusiveworld.netlify.app/"
                     target="_blank"
@@ -375,12 +375,12 @@ const Navbar = () => {
 
             {/* Buttons */}
             <div className="flex gap-3">
-              {/* <Link
-                to="/one-portal/login"
-                className="bg-[#e16a5b] text-white px-5 py-2 rounded"
+              <Link
+                to="/donate"
+                className="bg-[#e16a5b] text-white px-5 py-2 rounded text-center"
               >
                 Donate
-              </Link> */}
+              </Link>
               <a
                 href="https://shop-inclusiveworld.netlify.app/"
                 target="_blank"
