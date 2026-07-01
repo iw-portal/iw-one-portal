@@ -34,10 +34,16 @@ export default function EnrollmentDashboard({ user }) {
   const [step, setStep] = useState("programs");
   const [highestStep, setHighestStep] = useState("programs");
   const [paymentType, setPaymentType] = useState(null);
+  const [profileCompleted, setProfileCompleted] = useState(false);
 
   const currentStepIndex = STEPS.indexOf(step);
 
+  // function canGoToStep(targetStep) {
+  //   return STEP_ORDER.indexOf(targetStep) <= STEP_ORDER.indexOf(highestStep);
+  // }
   function canGoToStep(targetStep) {
+    if (targetStep === "profile" && profileCompleted) return true;
+
     return STEP_ORDER.indexOf(targetStep) <= STEP_ORDER.indexOf(highestStep);
   }
 
@@ -195,6 +201,24 @@ export default function EnrollmentDashboard({ user }) {
   }, []);
   /* eslint-enable react-hooks/exhaustive-deps */
 
+  async function fetchEnrollmentProfileStatus() {
+    const activeUser = getCurrentUser();
+    if (!activeUser?.person_id) return;
+
+    const { data, error } = await supabase
+      .from("member_enrollment_profiles")
+      .select("completed_at")
+      .eq("person_id", activeUser.person_id)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setProfileCompleted(Boolean(data?.completed_at));
+  }
+
   async function fetchCycles() {
     const activeUser = getCurrentUser();
     const today = new Date().toISOString().split("T")[0];
@@ -292,6 +316,7 @@ export default function EnrollmentDashboard({ user }) {
 
     console.log("FETCH PROFILE");
     await fetchProfile();
+    await fetchEnrollmentProfileStatus();
 
     console.log("FETCH COMPLETION");
     await fetchCompletionStatus();
@@ -430,7 +455,32 @@ export default function EnrollmentDashboard({ user }) {
 
   async function initializeCartOnce(cycleId) {
     if (!cycleId) return null;
+
     const activeUser = getCurrentUser();
+    if (!activeUser?.person_id) return null;
+
+    // const { data: completedOrder, error: completedOrderError } = await supabase
+    //   .from("enrollment_orders")
+    //   .select("id, payment_status")
+    //   .eq("person_id", activeUser.person_id)
+    //   .eq("registration_setting_id", cycleId)
+    //   .in("payment_status", ["paid", "override"])
+    //   .order("created_at", { ascending: false })
+    //   .limit(1)
+    //   .maybeSingle();
+
+    // if (completedOrderError) {
+    //   console.error(completedOrderError);
+    //   return null;
+    // }
+
+    // if (completedOrder) {
+    //   setCart([]);
+    //   setActiveCartId(null);
+    //   setStep("complete");
+    //   setHighestStep("complete");
+    //   return null;
+    // }
 
     // FIND EXISTING DRAFT CART
 
@@ -525,7 +575,8 @@ export default function EnrollmentDashboard({ user }) {
 
     setCart(restoredCart);
 
-    if (restoredCart.length === 0 && ["profile", "payment"].includes(step)) {
+    // if (restoredCart.length === 0 && ["profile", "payment"].includes(step)) {
+    if (restoredCart.length === 0 && step === "payment") {
       updateStep("programs");
     }
   }
@@ -664,7 +715,21 @@ export default function EnrollmentDashboard({ user }) {
   // }
 
   function renderEnrollmentComplete(paymentType) {
-    const isPayNow = paymentType === "pay_now";
+    const isPayNow =
+      paymentType === "pay_now" ||
+      transactions.some(
+        (t) =>
+          t.registration_setting_id === selectedCycle?.id &&
+          t.payment_status === "paid",
+      );
+
+    const isOverride =
+      paymentType === "pay_later" ||
+      transactions.some(
+        (t) =>
+          t.registration_setting_id === selectedCycle?.id &&
+          t.payment_status === "override",
+      );
 
     return (
       <div className="bg-white rounded-3xl p-12 shadow-sm border text-center">

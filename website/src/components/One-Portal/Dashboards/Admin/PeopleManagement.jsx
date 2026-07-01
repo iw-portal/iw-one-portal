@@ -835,6 +835,23 @@ const PeopleManagement = () => {
       return;
     }
 
+    const { error: cartUpdateError } = await supabase
+      .from("enrollment_carts")
+      .update({
+        status: "completed",
+        payment_status: "override",
+        current_step: "complete",
+        highest_step: "complete",
+        finalized_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", latestOrder.cart_id);
+
+    if (cartUpdateError) {
+      alert(cartUpdateError.message);
+      return;
+    }
+
     await refreshSelectedPerson(person.id);
     await fetchPeople();
 
@@ -964,12 +981,20 @@ const PeopleManagement = () => {
       return;
     }
 
-    if (existingAssignments.length >= 3) {
-      alert("This user already has the maximum of 3 assigned programs.");
-      return;
-    }
+    // if (existingAssignments.length >= 3) {
+    //   alert("This user already has the maximum of 3 assigned programs.");
+    //   return;
+    // }
 
     // const selectedProgram = programs.find((p) => p.id === programId);
+    // const selectedProgram = programs.find(
+    //   (p) => String(p.id) === String(programId),
+    // );
+
+    // if (!selectedProgram) {
+    //   alert("Program not found.");
+    //   return;
+    // }
     const selectedProgram = programs.find(
       (p) => String(p.id) === String(programId),
     );
@@ -977,6 +1002,25 @@ const PeopleManagement = () => {
     if (!selectedProgram) {
       alert("Program not found.");
       return;
+    }
+
+    const isVocational =
+      selectedPerson.role === "member" &&
+      selectedProgram.category?.toLowerCase() === "vocational";
+
+    if (isVocational) {
+      const vocationalAssignments = existingAssignments.filter((assignment) => {
+        const assignedProgram = programs.find(
+          (p) => String(p.id) === String(assignment.program_id),
+        );
+
+        return assignedProgram?.category?.toLowerCase() === "vocational";
+      });
+
+      if (vocationalAssignments.length >= 3) {
+        alert("This member already has the maximum of 3 vocational programs.");
+        return;
+      }
     }
 
     const enrolledColumn =
