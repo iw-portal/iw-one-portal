@@ -127,6 +127,9 @@ const PeopleManagement = () => {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
   const [paymentModalPerson, setPaymentModalPerson] = useState(null);
+  const [paymentModalOrder, setPaymentModalOrder] = useState(null);
+  const [overrideModalOrder, setOverrideModalOrder] = useState(null);
+
   const [selectedPersonHasPendingCart, setSelectedPersonHasPendingCart] =
     useState(false);
   const [manualPaymentForm, setManualPaymentForm] = useState({
@@ -462,6 +465,38 @@ const PeopleManagement = () => {
     return getLatestOrder(person)?.payment_status || "unpaid";
   };
 
+  const hasPaymentStatus = (person, status) => {
+    const orders = person?.enrollment_orders || [];
+
+    if (status === "paid") {
+      return (
+        orders.length > 0 &&
+        orders.every((order) => order.payment_status === "paid")
+      );
+    }
+
+    return orders.some((order) => order.payment_status === status);
+  };
+
+  const getPaymentSummary = (person) => {
+    const orders = person?.enrollment_orders || [];
+
+    const hasUnpaid = orders.some((order) => order.payment_status === "unpaid");
+    const hasOverride = orders.some(
+      (order) => order.payment_status === "override",
+    );
+    const allPaid =
+      orders.length > 0 &&
+      orders.every((order) => order.payment_status === "paid");
+
+    if (hasUnpaid && hasOverride) return "UNPAID + OVERRIDE";
+    if (hasUnpaid) return "UNPAID";
+    if (hasOverride) return "OVERRIDE";
+    if (allPaid) return "PAID";
+
+    return "UNPAID";
+  };
+
   const filteredPeople = useMemo(() => {
     return people.filter((person) => {
       const term = search.toLowerCase();
@@ -479,8 +514,10 @@ const PeopleManagement = () => {
         (statusFilter === "active" && person.is_active) ||
         (statusFilter === "inactive" && !person.is_active);
 
+      // const matchesPayment =
+      //   paymentFilter === "all" || getPaymentStatus(person) === paymentFilter;
       const matchesPayment =
-        paymentFilter === "all" || getPaymentStatus(person) === paymentFilter;
+        paymentFilter === "all" || hasPaymentStatus(person, paymentFilter);
 
       return matchesSearch && matchesRole && matchesStatus && matchesPayment;
     });
@@ -495,9 +532,12 @@ const PeopleManagement = () => {
       admin: people.filter((p) => p.role === "admin").length,
       active: people.filter((p) => p.is_active).length,
       inactive: people.filter((p) => !p.is_active).length,
-      paid: people.filter((p) => getPaymentStatus(p) === "paid").length,
-      unpaid: people.filter((p) => getPaymentStatus(p) === "unpaid").length,
-      override: people.filter((p) => getPaymentStatus(p) === "override").length,
+      // paid: people.filter((p) => getPaymentStatus(p) === "paid").length,
+      // unpaid: people.filter((p) => getPaymentStatus(p) === "unpaid").length,
+      // override: people.filter((p) => getPaymentStatus(p) === "override").length,
+      paid: people.filter((p) => hasPaymentStatus(p, "paid")).length,
+      unpaid: people.filter((p) => hasPaymentStatus(p, "unpaid")).length,
+      override: people.filter((p) => hasPaymentStatus(p, "override")).length,
     };
   }, [people]);
 
@@ -774,7 +814,8 @@ const PeopleManagement = () => {
       return;
     }
 
-    const latestOrder = getLatestOrder(person);
+    // const latestOrder = getLatestOrder(person);
+    const latestOrder = overrideModalOrder || getLatestOrder(person);
 
     if (!latestOrder?.id || !latestOrder?.cart_id) {
       alert("No pending enrollment order/cart found for this member.");
@@ -855,16 +896,19 @@ const PeopleManagement = () => {
     await refreshSelectedPerson(person.id);
     await fetchPeople();
 
+    setOverrideModalOrder(null);
+
     alert("Member marked as override and enrollment preferences were created.");
   };
 
   const markOverrideAsPaid = async () => {
     if (!paymentModalPerson || !canOverridePayments) return;
 
-    const latestOrder = getLatestOrder(paymentModalPerson);
+    // const latestOrder = getLatestOrder(paymentModalPerson);
+    const latestOrder = paymentModalOrder;
 
     if (!latestOrder) {
-      alert("No enrollment order found.");
+      alert("No enrollment order selected.");
       return;
     }
 
@@ -880,7 +924,7 @@ const PeopleManagement = () => {
       .from("enrollment_orders")
       .update({
         payment_status: "paid",
-        status: "paid",
+        status: "completed",
         transaction_id: generateManualTransactionId(
           manualPaymentForm.payment_method,
           latestOrder.id.slice(0, 8),
@@ -916,6 +960,7 @@ const PeopleManagement = () => {
     const personId = paymentModalPerson.id;
 
     setPaymentModalPerson(null);
+    setPaymentModalOrder(null);
     setManualPaymentForm({
       payment_method: "",
       amount_received: "",
@@ -1462,11 +1507,12 @@ const PeopleManagement = () => {
                         <span className="text-sm text-gray-700">
                           Current Payment Status:{" "}
                           <b>
-                            {getPaymentStatus(selectedPerson).toUpperCase()}
+                            {/* {getPaymentStatus(selectedPerson).toUpperCase()} */}
+                            {getPaymentSummary(selectedPerson)}
                           </b>
                         </span>
 
-                        {getPaymentStatus(selectedPerson) === "unpaid" && (
+                        {hasPaymentStatus(selectedPerson, "unpaid") && (
                           <button
                             onClick={() => markMemberAsOverride(selectedPerson)}
                             className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm"
@@ -1475,7 +1521,7 @@ const PeopleManagement = () => {
                           </button>
                         )}
 
-                        {getPaymentStatus(selectedPerson) === "override" && (
+                        {/* {getPaymentStatus(selectedPerson) === "override" && (
                           <button
                             onClick={() =>
                               setPaymentModalPerson(selectedPerson)
@@ -1484,7 +1530,7 @@ const PeopleManagement = () => {
                           >
                             Mark as Paid
                           </button>
-                        )}
+                        )} */}
                       </div>
                     </Section>
                   )}
@@ -1546,6 +1592,40 @@ const PeopleManagement = () => {
                                   <b>Notes:</b> {order.payment_notes || "-"}
                                 </p>
                               </div>
+                              {canOverridePayments &&
+                                order.payment_status === "unpaid" && (
+                                  <div className="mt-4 flex justify-end">
+                                    <button
+                                      onClick={() => {
+                                        setOverrideModalOrder(order);
+                                        markMemberAsOverride(selectedPerson);
+                                      }}
+                                      className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm"
+                                    >
+                                      Mark This Transaction as Override
+                                    </button>
+                                  </div>
+                                )}
+                              {canOverridePayments &&
+                                order.payment_status === "override" && (
+                                  <div className="mt-4 flex justify-end">
+                                    <button
+                                      onClick={() => {
+                                        setPaymentModalPerson(selectedPerson);
+                                        setPaymentModalOrder(order);
+                                        setManualPaymentForm({
+                                          payment_method: "",
+                                          amount_received:
+                                            order.total_amount || "",
+                                          payment_notes: "",
+                                        });
+                                      }}
+                                      className="bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
+                                    >
+                                      Mark This Transaction as Paid
+                                    </button>
+                                  </div>
+                                )}
                             </div>
                           ))}
                       </div>
@@ -1672,9 +1752,8 @@ const PeopleManagement = () => {
                             <button
                               disabled={
                                 !program?.id ||
-                                !["paid", "override"].includes(
-                                  getPaymentStatus(selectedPerson),
-                                )
+                                (!hasPaymentStatus(selectedPerson, "paid") &&
+                                  !hasPaymentStatus(selectedPerson, "override"))
                               }
                               onClick={() => assignProgramToPerson(program.id)}
                               className="bg-teal-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
@@ -2123,7 +2202,10 @@ const PeopleManagement = () => {
       {paymentModalPerson && (
         <div
           className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] px-4"
-          onClick={() => setPaymentModalPerson(null)}
+          onClick={() => {
+            setPaymentModalPerson(null);
+            setPaymentModalOrder(null);
+          }}
         >
           <div
             className="bg-white w-full max-w-lg rounded-2xl p-6"

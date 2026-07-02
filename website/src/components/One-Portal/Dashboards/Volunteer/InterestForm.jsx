@@ -2,16 +2,54 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../../../lib/supabase";
 import { HiCheckCircle } from "react-icons/hi";
 
+function RequiredLabel({ children, required = false }) {
+  return (
+    <>
+      {children}
+      {required && <span className="text-red-600 ml-1">*</span>}
+    </>
+  );
+}
+
+// function QuestionCard({
+//   title,
+//   value,
+//   onChange,
+//   placeholder,
+//   disabled = false,
+//   required = false,
+// }) {
+//   return (
+//     <div className="bg-white rounded-3xl border shadow-sm p-8">
+//       <h2 className="text-2xl font-semibold mb-5">
+//         <RequiredLabel required={required}>{title}</RequiredLabel>
+//       </h2>
+
+//       <textarea
+//         disabled={disabled}
+//         rows={6}
+//         value={value || ""}
+//         onChange={onChange}
+//         placeholder={placeholder}
+//         className="w-full border rounded-xl p-4"
+//       />
+//     </div>
+//   );
+// }
+
 function QuestionCard({
   title,
   value,
   onChange,
   placeholder,
   disabled = false,
+  required = false,
 }) {
   return (
     <div className="bg-white rounded-3xl border shadow-sm p-8">
-      <h2 className="text-2xl font-semibold mb-5">{title}</h2>
+      <h2 className="text-2xl font-semibold mb-5">
+        <RequiredLabel required={required}>{title}</RequiredLabel>
+      </h2>
 
       <textarea
         disabled={disabled}
@@ -32,6 +70,7 @@ export default function InterestForm({ user }) {
   const [applicationId, setApplicationId] = useState(null);
   const [programs, setPrograms] = useState([]);
   const [hasAssignments, setHasAssignments] = useState(false);
+  const [selectedProgramDetails, setSelectedProgramDetails] = useState(null);
 
   const formatPacificTime = (date) => {
     if (!date) return "Never";
@@ -120,14 +159,11 @@ export default function InterestForm({ user }) {
   const loadPrograms = async () => {
     const { data } = await supabase
       .from("programs")
-      .select("id, course_title, level, sections")
+      .select(
+        "id, course_title, course_code, category, level, sections, image_url, description",
+      )
       .eq("is_active", true)
       .eq("is_archived", false)
-      .not(
-        "course_title",
-        "in",
-        '("Academic Counseling","Employment Services")',
-      )
       .order("course_title");
 
     setPrograms(data || []);
@@ -182,33 +218,63 @@ export default function InterestForm({ user }) {
     return `${title} • ${dayText} • ${timeText}`;
   };
 
+  // const getProgramSchedule = (program) => {
+  //   const sections = program.sections || [];
+
+  //   if (sections.length === 0) {
+  //     return "";
+  //   }
+
+  //   const firstSection = sections[0];
+
+  //   const days = [
+  //     ...new Set(
+  //       sections.map((s) => dayMapping[s.day] || s.day).filter(Boolean),
+  //     ),
+  //   ];
+
+  //   const dayText = days.join(", ");
+
+  //   // const timeText =
+  //   //   firstSection?.start_time && firstSection?.end_time
+  //   //     ? `${firstSection.start_time} - ${firstSection.end_time}`
+  //   //     : "";
+  //   const timeText =
+  //     firstSection?.start_time && firstSection?.end_time
+  //       ? `${formatPacificTimeOnly(firstSection.start_time)} - ${formatPacificTimeOnly(firstSection.end_time)} PT`
+  //       : "";
+
+  //   return [dayText, timeText].filter(Boolean).join(" • ");
+  // };
+
   const getProgramSchedule = (program) => {
     const sections = program.sections || [];
 
     if (sections.length === 0) {
-      return "";
+      return "Schedule not available";
     }
 
-    const firstSection = sections[0];
+    const scheduleParts = sections
+      .map((section) => {
+        const day = dayMapping[section.day] || section.day || "";
 
-    const days = [
-      ...new Set(
-        sections.map((s) => dayMapping[s.day] || s.day).filter(Boolean),
-      ),
-    ];
+        const timeText =
+          section.time_text && section.time_text !== "NA"
+            ? section.time_text
+            : section.start_time && section.end_time
+              ? `${formatPacificTimeOnly(section.start_time)} - ${formatPacificTimeOnly(section.end_time)} PT`
+              : "";
 
-    const dayText = days.join(", ");
+        const mode = section.mode || "";
+        const location = section.meeting_location || "";
 
-    // const timeText =
-    //   firstSection?.start_time && firstSection?.end_time
-    //     ? `${firstSection.start_time} - ${firstSection.end_time}`
-    //     : "";
-    const timeText =
-      firstSection?.start_time && firstSection?.end_time
-        ? `${formatPacificTimeOnly(firstSection.start_time)} - ${formatPacificTimeOnly(firstSection.end_time)} PT`
-        : "";
+        return [day, timeText, mode, location].filter(Boolean).join(" • ");
+      })
+      .filter(Boolean);
 
-    return [dayText, timeText].filter(Boolean).join(" • ");
+    return scheduleParts.length > 0
+      ? scheduleParts.join(", ")
+      : "Schedule not available";
   };
 
   const loadVolunteerData = async () => {
@@ -440,7 +506,7 @@ export default function InterestForm({ user }) {
 
       <div className="bg-white rounded-3xl border shadow-sm p-8">
         <h2 className="text-2xl font-semibold mb-2">
-          Volunteer Program Preferences
+          Volunteer Program Preferences <span className="text-red-500">*</span>
         </h2>
 
         <p className="text-gray-500 mb-6">
@@ -449,7 +515,7 @@ export default function InterestForm({ user }) {
           interested.
         </p>
 
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           {programs.map((program) => (
             <div
               key={program.id}
@@ -481,13 +547,13 @@ export default function InterestForm({ user }) {
                 value={programRanks[program.id] || ""}
                 onChange={(e) => updateProgramRank(program.id, e.target.value)}
                 className="
-            border
-            rounded-xl
-            px-4
-            py-3
-            bg-white
-            min-w-[180px]
-          "
+                  border
+                  rounded-xl
+                  px-4
+                  py-3
+                  bg-white
+                  min-w-[180px]
+                "
               >
                 <option value="">Not Interested</option>
 
@@ -501,7 +567,168 @@ export default function InterestForm({ user }) {
               </select>
             </div>
           ))}
+        </div> */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {programs.map((program) => (
+            <div
+              key={program.id}
+              onClick={() => setSelectedProgramDetails(program)}
+              className="bg-white border rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col cursor-pointer"
+            >
+              <div className="bg-[#f8faf9] flex justify-center items-center py-8 px-8 border-b">
+                <img
+                  src={
+                    program.image_url?.replace("..", "") ||
+                    "/placeholder-course.png"
+                  }
+                  alt={program.course_title}
+                  className="w-full h-44 rounded-2xl border shadow-sm object-cover"
+                />
+              </div>
+
+              <div className="p-6 flex flex-col flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-xl font-semibold text-[#0f5b54]">
+                      {program.course_title}
+                    </h3>
+
+                    {program.course_code && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        {program.course_code}
+                      </p>
+                    )}
+                  </div>
+
+                  {program.level && (
+                    <span className="shrink-0 rounded-full bg-teal-50 text-teal-700 px-3 py-1 text-xs font-semibold">
+                      {program.level.charAt(0).toUpperCase() +
+                        program.level.slice(1)}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm text-gray-600 mt-3">
+                  <span className="font-medium text-gray-700">Schedule:</span>{" "}
+                  {getProgramSchedule(program) || "Schedule not available"}
+                </p>
+
+                <p className="text-xs text-red-600 mt-4">
+                  Click card to view full program details.
+                </p>
+
+                <div
+                  className="mt-auto pt-6"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Your Preference
+                  </label>
+
+                  <select
+                    disabled={hasAssignments}
+                    value={programRanks[program.id] || ""}
+                    onChange={(e) =>
+                      updateProgramRank(program.id, e.target.value)
+                    }
+                    className="w-full border rounded-xl px-4 py-3 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Not Interested</option>
+
+                    {Array.from(
+                      { length: programs.length },
+                      (_, i) => i + 1,
+                    ).map((rank) => (
+                      <option key={rank} value={rank}>
+                        Rank #{rank}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
+        {selectedProgramDetails && (
+          <div
+            className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4"
+            onClick={() => setSelectedProgramDetails(null)}
+          >
+            <div
+              className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-[#f8faf9] p-8 flex justify-center">
+                <img
+                  src={
+                    selectedProgramDetails.image_url?.replace("..", "") ||
+                    "/placeholder-course.png"
+                  }
+                  alt={selectedProgramDetails.course_title}
+                  className="max-h-72 object-contain"
+                />
+              </div>
+
+              <div className="p-8">
+                <div className="flex justify-between gap-4 items-start">
+                  <div>
+                    <h2 className="text-3xl font-bold text-[#0f5b54]">
+                      {selectedProgramDetails.course_title}
+                    </h2>
+
+                    {selectedProgramDetails.course_code && (
+                      <p className="text-gray-500 mt-2">
+                        {selectedProgramDetails.course_code}
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProgramDetails(null)}
+                    className="text-gray-500 hover:text-black text-3xl leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="mt-6 grid sm:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 border rounded-2xl p-4">
+                    <p className="text-xs text-gray-500 uppercase font-semibold">
+                      Schedule
+                    </p>
+                    <p className="mt-1 text-gray-800">
+                      {getProgramSchedule(selectedProgramDetails) ||
+                        "Schedule not available"}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 border rounded-2xl p-4">
+                    <p className="text-xs text-gray-500 uppercase font-semibold">
+                      Level
+                    </p>
+                    <p className="mt-1 text-gray-800">
+                      {selectedProgramDetails.level.charAt(0).toUpperCase() +
+                        selectedProgramDetails.level.slice(1) ||
+                        "Not Specified"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-8">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Program Description
+                  </h3>
+
+                  <p className="mt-3 text-gray-600 leading-7 whitespace-pre-wrap">
+                    {selectedProgramDetails.description ||
+                      "No description available for this program."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {Object.keys(programRanks).length > 0 && (
           <div className="mt-8 bg-gray-50 rounded-2xl p-5 border">
@@ -571,6 +798,7 @@ export default function InterestForm({ user }) {
       </div>
 
       <QuestionCard
+        required
         title="1. Tell us about yourself"
         value={form.about_me}
         onChange={(e) => update("about_me", e.target.value)}
@@ -579,6 +807,7 @@ export default function InterestForm({ user }) {
       />
 
       <QuestionCard
+        required
         title="2. What is important to you?"
         value={form.important_to_me}
         onChange={(e) => update("important_to_me", e.target.value)}
@@ -587,6 +816,7 @@ export default function InterestForm({ user }) {
       />
 
       <QuestionCard
+        required
         title="3. What are your hopes and dreams?"
         value={form.hopes_and_dreams}
         onChange={(e) => update("hopes_and_dreams", e.target.value)}
@@ -595,6 +825,7 @@ export default function InterestForm({ user }) {
       />
 
       <QuestionCard
+        required
         title="4. How do you learn and work best?"
         value={form.learning_and_work_style}
         onChange={(e) => update("learning_and_work_style", e.target.value)}
@@ -603,6 +834,7 @@ export default function InterestForm({ user }) {
       />
 
       <QuestionCard
+        required
         title="5. What experiences have helped shape you?"
         value={form.growth_experiences}
         onChange={(e) => update("growth_experiences", e.target.value)}
@@ -611,6 +843,7 @@ export default function InterestForm({ user }) {
       />
 
       <QuestionCard
+        required
         title="6. How do you communicate your needs?"
         value={form.communication_style}
         onChange={(e) => update("communication_style", e.target.value)}
@@ -619,6 +852,7 @@ export default function InterestForm({ user }) {
       />
 
       <QuestionCard
+        required
         title="7. What should we know to support you?"
         value={form.support_preferences}
         onChange={(e) => update("support_preferences", e.target.value)}
