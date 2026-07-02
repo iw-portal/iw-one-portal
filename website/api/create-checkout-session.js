@@ -280,24 +280,44 @@ export default async function handler(req, res) {
     }
 
     const configuredRegistrationFee = getRegistrationFee(registrationCycle);
-    const { data: paidFeeOrders, error: paidFeeError } = await supabaseAdmin
-      .from("enrollment_orders")
-      .select("id")
-      .eq("person_id", personId)
-      .eq("registration_setting_id", cartRecord.registration_setting_id)
-      .eq("payment_status", "paid")
-      .eq("status", "completed")
-      .gt("registration_fee", 0)
-      .limit(1);
+    // const { data: paidFeeOrders, error: paidFeeError } = await supabaseAdmin
+    //   .from("enrollment_orders")
+    //   .select("id")
+    //   .eq("person_id", personId)
+    //   .eq("registration_setting_id", cartRecord.registration_setting_id)
+    //   .eq("payment_status", "paid")
+    //   .eq("status", "completed")
+    //   .gt("registration_fee", 0)
+    //   .limit(1);
+    const { data: coveredFeeOrders, error: coveredFeeError } =
+      await supabaseAdmin
+        .from("enrollment_orders")
+        .select("id")
+        .eq("person_id", personId)
+        .eq("registration_setting_id", cartRecord.registration_setting_id)
+        .gt("registration_fee", 0)
+        .or(
+          "and(payment_status.eq.paid,status.eq.completed),payment_status.eq.override",
+        )
+        .limit(1);
 
-    if (paidFeeError) {
-      console.error(paidFeeError);
+    // if (paidFeeError) {
+    //   console.error(paidFeeError);
+    //   return res.status(500).json({
+    //     error: "Could not validate registration fee",
+    //   });
+    // }
+    if (coveredFeeError) {
+      console.error(coveredFeeError);
       return res.status(500).json({
         error: "Could not validate registration fee",
       });
     }
 
-    const registrationFee = paidFeeOrders?.length
+    // const registrationFee = paidFeeOrders?.length
+    //   ? 0
+    //   : configuredRegistrationFee;
+    const registrationFee = coveredFeeOrders?.length
       ? 0
       : configuredRegistrationFee;
     // const subtotal = calculateSubtotal(cartItems.length);
