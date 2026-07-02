@@ -17,7 +17,12 @@ const DREAM_OPTIONS = [
   "Friendships",
 ];
 
-export default function EnrollmentProfile({ user, onNext, onBack }) {
+export default function EnrollmentProfile({
+  user,
+  onNext,
+  onBack,
+  hasCartItems = false,
+}) {
   const [loading, setLoading] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
 
@@ -908,7 +913,7 @@ export default function EnrollmentProfile({ user, onNext, onBack }) {
               {loading ? "Saving..." : "Save"}
             </button>
 
-            {requiredComplete && (
+            {hasCartItems && requiredComplete && (
               <button
                 onClick={() => save({ continueNext: true })}
                 disabled={loading}

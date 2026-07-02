@@ -457,6 +457,7 @@ export default function EnrollmentCheckout({
         }),
       });
 
+      console.log(response);
       const data = await response.json();
 
       if (!response.ok) {

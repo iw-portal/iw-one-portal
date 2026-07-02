@@ -87,6 +87,9 @@ import OPDPage from "./components/One-Portal/Dashboards/PCS/OPDPage";
 import OPDReviewPage from "./components/One-Portal/Dashboards/PCS/OPDReviewPage";
 import OPDDirectory from "./components/One-Portal/Dashboards/PCS/OPDDirectory";
 import PCSProfile from "./components/One-Portal/Dashboards/PCS/PCSProfile";
+import DonatePage from "./components/Community/Donate";
+import DonatePaymentPage from "./components/Community/DonatePayment";
+import DonateSuccessPage from "./components/Community/DonationSuccessPage";
 
 const USER_STORAGE_KEY = "iw_user";
 const CHECKOUT_USER_STORAGE_KEY = "iw_checkout_user";
@@ -350,6 +353,9 @@ const App = () => {
             path="/programs/employment-services"
             element={<EmploymentServices />}
           />
+          <Route path="/donate" element={<DonatePage />} />
+          <Route path="/donate/payment" element={<DonatePaymentPage />} />
+          <Route path="/donate/success" element={<DonateSuccessPage />} />
           <Route
             path="/programs/employment-services/esp_partners"
             element={<EmploymentPartners />}

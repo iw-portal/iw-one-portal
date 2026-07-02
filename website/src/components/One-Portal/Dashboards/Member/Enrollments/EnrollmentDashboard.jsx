@@ -87,14 +87,31 @@ export default function EnrollmentDashboard({ user }) {
 
   const remainingSlots = Math.max(0, 3 - vocationalEnrollments.length);
 
+  // const hasPaidRegistrationFee = selectedCycle?.id
+  //   ? transactions.some(
+  //       (transaction) =>
+  //         transaction.registration_setting_id === selectedCycle.id &&
+  //         transaction.payment_status === "paid" &&
+  //         transaction.status === "completed" &&
+  //         Number(transaction.registration_fee || 0) > 0,
+  //     )
+  //   : false;
+
   const hasPaidRegistrationFee = selectedCycle?.id
-    ? transactions.some(
-        (transaction) =>
-          transaction.registration_setting_id === selectedCycle.id &&
-          transaction.payment_status === "paid" &&
-          transaction.status === "completed" &&
-          Number(transaction.registration_fee || 0) > 0,
-      )
+    ? transactions.some((transaction) => {
+        const isSameCycle =
+          transaction.registration_setting_id === selectedCycle.id;
+
+        const hasRegistrationFee =
+          Number(transaction.registration_fee || 0) > 0;
+
+        const registrationFeeCovered =
+          (transaction.payment_status === "paid" &&
+            transaction.status === "completed") ||
+          transaction.payment_status === "override";
+
+        return isSameCycle && hasRegistrationFee && registrationFeeCovered;
+      })
     : false;
 
   function stepStorageKey(cycleId = selectedCycle?.id) {
@@ -640,9 +657,16 @@ export default function EnrollmentDashboard({ user }) {
 
     if (step === "profile") {
       return (
+        // <EnrollmentProfile
+        //   user={currentUser}
+        //   cycle={selectedCycle}
+        //   onNext={() => updateStep("payment")}
+        //   onBack={() => updateStep("programs")}
+        // />
         <EnrollmentProfile
           user={currentUser}
           cycle={selectedCycle}
+          hasCartItems={cart.length > 0}
           onNext={() => updateStep("payment")}
           onBack={() => updateStep("programs")}
         />
