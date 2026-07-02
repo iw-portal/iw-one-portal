@@ -8,7 +8,7 @@ import {
   Bell,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FaTimes, FaRegNewspaper } from "react-icons/fa";
+import { FaTimes, FaRegNewspaper, FaMoneyBill } from "react-icons/fa";
 import { CiCreditCard1 } from "react-icons/ci";
 import { cloneElement } from "react";
 import { MdAppRegistration } from "react-icons/md";
@@ -19,8 +19,17 @@ import { HiOutlineDocumentDuplicate } from "react-icons/hi2";
 const AdminSidebar = ({ setUser, open, setOpen }) => {
   const navigate = useNavigate();
 
+  const DONATION_ADMIN_USERNAMES = ["pranmaga", "rohipanc87", "madhkris93"];
+
+  const storedUser = JSON.parse(localStorage.getItem("iw_user") || "{}");
+
+  const canViewDonations =
+    storedUser?.role === "admin" &&
+    DONATION_ADMIN_USERNAMES.includes(storedUser?.username);
+
   const menu = [
     { name: "Dashboard", path: "/one-portal/admin", icon: <Home /> },
+    { name: "Profile", path: "/one-portal/admin/profile", icon: <Users /> },
     {
       name: "Programs",
       path: "/one-portal/admin/programs",
@@ -73,9 +82,18 @@ const AdminSidebar = ({ setUser, open, setOpen }) => {
       path: "/one-portal/admin/notifications",
       icon: <Bell />,
     },
-    { name: "Profile", path: "/one-portal/admin/profile", icon: <Users /> },
+    {
+      name: "Donations",
+      path: "/one-portal/admin/donations",
+      icon: <FaMoneyBill />,
+      restricted: true,
+    },
     { name: "Bugs Reported", path: "/one-portal/admin/bugs", icon: <IoBug /> },
   ];
+
+  const visibleMenu = menu.filter(
+    (item) => !item.restricted || canViewDonations,
+  );
 
   const linkStyle = ({ isActive }) =>
     `flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
@@ -100,7 +118,7 @@ const AdminSidebar = ({ setUser, open, setOpen }) => {
 
             {/* Menu */}
             <nav className="flex flex-col gap-2 px-4 py-4 flex-1 overflow-y-auto">
-              {menu.map((item) => (
+              {visibleMenu.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -150,7 +168,7 @@ const AdminSidebar = ({ setUser, open, setOpen }) => {
         />
 
         <nav className="space-y-2 mt-5">
-          {menu.map((item) => (
+          {visibleMenu.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

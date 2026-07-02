@@ -90,6 +90,7 @@ import PCSProfile from "./components/One-Portal/Dashboards/PCS/PCSProfile";
 import DonatePage from "./components/Community/Donate";
 import DonatePaymentPage from "./components/Community/DonatePayment";
 import DonateSuccessPage from "./components/Community/DonationSuccessPage";
+import DonationsAdminView from "./components/One-Portal/Dashboards/Admin/Donations";
 
 const USER_STORAGE_KEY = "iw_user";
 const CHECKOUT_USER_STORAGE_KEY = "iw_checkout_user";
@@ -462,6 +463,16 @@ const App = () => {
               <ProtectedRoute user={user} allowedRoles={["admin"]}>
                 <AdminLayout setUser={setUser}>
                   <Dashboard />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/one-portal/admin/donations"
+            element={
+              <ProtectedRoute user={user} allowedRoles={["admin"]}>
+                <AdminLayout setUser={setUser}>
+                  <DonationsAdminView />
                 </AdminLayout>
               </ProtectedRoute>
             }
